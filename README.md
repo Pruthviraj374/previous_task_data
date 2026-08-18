@@ -23,3 +23,4 @@ here, following the existing files' format:
 ## Files
 
 Each file is named after its task (`dynamo-<hash>-<category-slug>-case-study.md` or similar).
+- [dynamo-42e4474 adjudicate-gridfall-runs](dynamo-42e4474-adjudicate-gridfall-runs.md) — puzzle-solving; y-up kick tables vs y-down arrays; accepted at pass@5 2/5
