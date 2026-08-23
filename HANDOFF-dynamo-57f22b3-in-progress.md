@@ -5,11 +5,12 @@ rebuild that answers `pass2` 2/2 on `7c0c604`. Pipeline run `32625014553`
 was in flight at the time of writing.
 
 -----------------------------------------------------------------------
-STATUS IN ONE SENTENCE: the previous handoff's recommendation — REDESIGN the
-crux rather than push a sixth disclosure-wording tweak — was taken; the
-contested "ties vs. outlier" judgment is gone, replaced by two independent
-judgments whose ground truth was verified to be uniquely determined, and the
-result is pushed and awaiting gates.
+STATUS IN ONE SENTENCE: the crux redesign fixed the VALIDITY problem for good
+(rubric + deep_review's discoverability concern have not been raised since),
+but the redesigned task was then solved 2/2 by pass2, so the shell itself was
+rebuilt to grade a script against held-out batches with a concealed
+pseudoreplication axis — that rebuild is `8dc1215`, pushed and awaiting gates.
+Read "Where this stands now" below before anything else.
 -----------------------------------------------------------------------
 
 ## Repo / PR pointers
@@ -23,7 +24,7 @@ result is pushed and awaiting gates.
   gate iteration, including this redesign — read it for anything this handoff
   compresses.
 
-## Why the redesign, in one paragraph
+## Round A background: why the crux was redesigned
 
 `deep_review` blocked `c87e4a9` on the **validity of the golden answer**, not
 on disclosure wording: *"two competent experts can reasonably disagree on
@@ -34,7 +35,7 @@ sixth round of the same disclosure-vs-difficulty flip-flop on one crux.
 Both of `deep_review`'s own suggested fixes were dead ends (one was the clause
 `instruction_concision` had already failed twice; the other deletes the crux).
 
-## What `8dc9d80` actually changed
+## Round A: what the crux redesign changed
 
 **Kept, untouched:** the task shell (rebuild a retired significance script),
 the JSON I/O format, `task.toml`'s metadata fields, and **comparisons 1–5,
@@ -75,7 +76,7 @@ further change here):
   a technique**, graded all-or-nothing. "One axis is a coin flip, two axes are
   a task."
 
-## Ground truth is uniquely determined — verified, not asserted
+## Round A: ground truth is uniquely determined — verified, not asserted
 
 This is the specific property the old design lacked and the whole point of the
 redesign. On this batch, **Bonferroni, Šidák, Holm and Holm-Šidák all return
@@ -90,7 +91,7 @@ comparison (spread < 0.005).
 Golden p-values: cmp_01 0.0 (T), cmp_02 0.0261 (F), cmp_03 0.0 (T),
 cmp_04 0.3333 (F), cmp_05 0.0 (T), cmp_06 0.0043 (T), cmp_07 0.0338 (F).
 
-## Local verification done before the push
+## Round A: local verification done before that push
 
 - `harbor run -p task --agent oracle` = **1.0**; `--agent nop` = **0.0**.
 - **Five mutants, each confirmed to score 0.0**: no batch correction
