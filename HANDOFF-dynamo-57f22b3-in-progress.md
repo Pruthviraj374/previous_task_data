@@ -1,7 +1,8 @@
 HANDOFF: dynamo-57f22b3-machine-learning-and-ai (PR #1)
 =========================================================
-Last updated: after pushing commit `1178fc5` (2026-08-23), which adds the
-token-weighted pooling axis after `pass2` returned 2/2 on `8dc1215` too.
+Last updated: after pushing `38e95c0` (2026-08-24). See "Round D" below --
+the design is now well-posed and fair, and the open question is no longer
+fairness but whether it is HARD ENOUGH. Read Round D before doing anything.
 
 -----------------------------------------------------------------------
 STATUS IN ONE SENTENCE: the crux redesign fixed the VALIDITY problem for good
@@ -15,7 +16,7 @@ Read "Where this stands now" below before anything else.
 ## Repo / PR pointers
 
 - Local clone: `C:\Users\chara\Downloads\Handshake\dynamo-57f22b3-machine-learning-and-ai`
-- Branch: `submission`, currently at commit `1178fc5` (nothing uncommitted)
+- Branch: `submission`, currently at commit `38e95c0` (nothing uncommitted)
 - PR: https://github.com/handshake-project-dynamo/dynamo-57f22b3-machine-learning-and-ai/pull/1
 - Category/subcategory (fixed, do not edit): Machine Learning and AI / NLP and language models
 - Model/agent under test: Opus-4.8 / Terminus-2
@@ -248,6 +249,78 @@ that point stop adding statistical axes. Options, roughly in order:
 - Reconsider whether this category/subcategory can stump this model at all
   within the remaining push budget, and say so plainly rather than iterating
   further.
+
+
+## Round D — `23caadd` then `38e95c0` (current). READ THIS FIRST.
+
+`1178fc5` (the token-pooling axis) was the **high-water mark of this PR**:
+`pass2` passed as a genuine failure for the first time, and `ava_review`,
+`deep_review`, `tier1`, `qc_eval` and `qc_exec` all cleared. Only `qc_gate`
+blocked, on two findings that were **real defects in my instruction wording**,
+both fixed in `23caadd`:
+
+- **B5.** The error budget was stated *only over the complete null* ("if in
+  truth no candidate differed"). Under the complete null the false discovery
+  rate *equals* the chance of any false return, so Benjamini-Hochberg genuinely
+  satisfied the sentence as written while diverging from golden. The budget now
+  binds whichever candidates do or do not truly differ, so BH no longer
+  satisfies it and rejecting it is correct. (BH still diverges on every batch.)
+- **B1.** "Verify that your test's assumptions hold" never said to prefer the
+  more powerful valid test, so always-Wilcoxon was a defensible reading the
+  verifier rejected. The instruction now states two ordered rules: assumptions
+  must hold for the data the test is applied to; among valid tests, use the most
+  powerful. Neither names a test.
+
+`23caadd` then returned **`pass2` 0/2 — but with TASK FIX SUGGESTED**, and the
+analysis was right. Both agents got **every significance boolean correct on all
+five batches**, including the four held-out ones. They failed only the p-value
+fidelity check, and my own B1 wording had invited both divergences: one agent
+used a **sign test** after a symmetry pre-check (symmetry *is* a Wilcoxon
+assumption), the other a **precision-weighted t-test** using corpus token totals
+(invited by "token counts" + "most powerful valid test").
+
+Measured across all five batches: those legitimate variants spread the
+unadjusted p-value by up to **0.42** and flip **zero** decisions. So `38e95c0`
+stops grading the p-value against golden. It must still be a finite probability
+in [0,1] and agree with the submission's own decision at that batch's threshold.
+Anti-fabrication now rests on 34 booleans across five batches, four unseen --
+verified by two new self-consistent fabrication mutants that satisfy the p-value
+check and still score 0.0.
+
+### Mutation suite as of `38e95c0`
+
+Nine must-fail (all 0.0): arithmetic-mean pooling, unweighted geometric pooling,
+ignoring `corpus`, per-comparison 0.05, always t-test, always Wilcoxon, constant
+fabricated p-value, and two self-consistent fabrications. Two must-pass (both
+1.0): token-weighted *arithmetic* pooling, and the sign-test variant -- the two
+the trials actually used. `harbor oracle` = 1.0, `nop` = 0.0.
+
+### THE ACTUAL SITUATION — the honest read
+
+**Four independent mechanisms have now been tried and this model has solved
+every one:** convention-plus-evidence (defeated by enumeration), the batch error
+budget (Bonferroni is memorised), pseudoreplication ("scored as a block" is
+signpost enough), and token-weighted pooling. On the last run both agents
+produced a **fully correct decision set on four batches they had never seen**.
+
+The task is now well-posed, fair and thoroughly verified. Every remaining
+failure was a verifier artifact, and fixing those removes the only thing that
+was failing anyone. **The realistic expectation for the next `trials` run is a
+"not hard enough" block, not an acceptance.**
+
+The recurring lesson, now confirmed four ways: *state a premise clearly enough
+to be fair and this model derives the standard consequence from it.* Held-out
+grading is necessary but not sufficient. Concealment via an inert sample did not
+help either, because the agents re-derived the rule from the instruction's
+premise rather than from the sample.
+
+**Recommendation if `trials` blocks on difficulty:** do NOT add a fifth
+statistical axis -- that has now failed four times in a row and each attempt
+costs a full pipeline cycle. Either (a) take the design to a different crux
+family within Machine Learning and AI / NLP and language models, accepting that
+this is effectively a sixth design, or (b) report a genuine dead end for this
+category-model pairing and write the case study. Option (b) is defensible on the
+evidence and should be put to the user rather than decided unilaterally.
 
 ## Mandatory rules to keep following
 
