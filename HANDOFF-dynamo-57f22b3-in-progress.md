@@ -1,8 +1,7 @@
 HANDOFF: dynamo-57f22b3-machine-learning-and-ai (PR #1)
 =========================================================
-Last updated: after pushing commit `8dc1215` (2026-08-23), the held-out
-rebuild that answers `pass2` 2/2 on `7c0c604`. Pipeline run `32625014553`
-was in flight at the time of writing.
+Last updated: after pushing commit `1178fc5` (2026-08-23), which adds the
+token-weighted pooling axis after `pass2` returned 2/2 on `8dc1215` too.
 
 -----------------------------------------------------------------------
 STATUS IN ONE SENTENCE: the crux redesign fixed the VALIDITY problem for good
@@ -16,7 +15,7 @@ Read "Where this stands now" below before anything else.
 ## Repo / PR pointers
 
 - Local clone: `C:\Users\chara\Downloads\Handshake\dynamo-57f22b3-machine-learning-and-ai`
-- Branch: `submission`, currently at commit `8dc1215` (nothing uncommitted)
+- Branch: `submission`, currently at commit `1178fc5` (nothing uncommitted)
 - PR: https://github.com/handshake-project-dynamo/dynamo-57f22b3-machine-learning-and-ai/pull/1
 - Category/subcategory (fixed, do not edit): Machine Learning and AI / NLP and language models
 - Model/agent under test: Opus-4.8 / Terminus-2
@@ -177,6 +176,78 @@ not an improvement" direction axis was designed and rejected — the outlier
 comparisons have a negative mean but positive median, so direction there would
 be a mean-vs-median judgment call, the exact class of contestable ground truth
 that blocked `c87e4a9`.
+
+
+## Round C — `1178fc5` (current)
+
+`8dc1215` cleared every upstream gate again and `pass2` returned **2/2 solved**
+a second time. The analysis is explicit: both agents did the **corpus-level
+aggregation** — one trace names it "pseudoreplication fix" — then applied the
+batch correction. One trial hit `AgentTimeoutError` mid-inference but only
+after its working script was on disk, so it counted as a pass.
+
+**The lesson, now confirmed three ways:** state a premise clearly enough to be
+fair and this model derives the standard consequence from it.
+Convention-plus-evidence fell to enumeration; the batch budget fell because
+Bonferroni is memorised; pseudoreplication fell because "scored as a block" is
+signpost enough. Held-out grading is *necessary* — it is what makes a silent
+failure possible at all — but it is **not sufficient** on its own.
+
+Per `dynamo-83cfbd9`, the one axis that survived there was real, external and
+**counterintuitive**, where the natural implementation is confidently wrong and
+the sample never exercises it. Round C keeps all three existing axes as
+necessary-but-not-sufficient and adds a fourth of that kind.
+
+**The new axis.** Once a corpus must be reduced to one figure, that figure is a
+*perplexity*, and perplexity is `exp(total NLL / total tokens)` — so pooling
+weights each document by the tokens it contributed. `np.mean(ppl)` is what a
+solver naturally writes, and it silently reweights the corpus toward its
+shortest documents. The held-out batches put the candidate's apparent gains
+precisely there (3-4x divergence in effect size) and include the **mirror
+case**, where the real gain is in the long documents and the naive mean
+*understates* it — so neither direction is a shortcut.
+
+**Concealment is structural:** in the sample every document is the only member
+of its corpus, so pooling is the identity and *no pooling rule is
+distinguishable from any other*. Token counts still vary across the sample, so
+the field looks used without ever being testable.
+
+**A fairness edge was found and closed.** Pooling as a token-weighted
+*arithmetic* mean rather than in log space got every boolean right but drifted
+past the 0.02 p-value tolerance — on comparisons whose p-values sat near 0.47,
+where the drift decides nothing. Rather than rely on that near-miss (this PR was
+blocked once already on contestable ground truth), the p-value check is now
+**banded**: within 0.02, or both values above 0.15. The discriminating fact is
+now purely *whether token counts are used at all*, which is not disputable.
+Anti-fabrication is unaffected — a constant is still caught by every significant
+comparison and by the near-0.05 lure.
+
+### Local verification on `1178fc5`
+
+- `harbor oracle` = 1.0, `nop` = 0.0.
+- **Seven** wrong strategies each 0.0 through the full verifier: arithmetic-mean
+  pooling, unweighted geometric pooling, ignoring `corpus`, per-comparison 0.05,
+  always t-test, always Wilcoxon, fabricated p-values.
+- The legitimate near-equivalent (token-weighted *arithmetic* pooling) confirmed
+  still at **1.0** — this is a required check, not an optional one.
+- Reference script restored, reconfirmed at 1.0.
+- Generator asserts per batch: FWER variants agree; the two pooling means agree;
+  no p-value within 25% of its threshold; the sample is inert under all four
+  pooling rules grouped and ungrouped to 1e-12; every held-out batch flips on
+  BOTH concealed axes.
+
+### If Round C also comes back solved
+
+The evidence would then say this model derives *any* consequence from a stated
+premise, however counterintuitive, when the domain is standard statistics. At
+that point stop adding statistical axes. Options, roughly in order:
+- Make the concealed axis one where the sample actively *misleads* rather than
+  merely being inert (the `dynamo-83cfbd9` DST shape), e.g. a sample whose
+  corpora are single-document AND whose token counts are constant, so the naive
+  reading is positively reinforced.
+- Reconsider whether this category/subcategory can stump this model at all
+  within the remaining push budget, and say so plainly rather than iterating
+  further.
 
 ## Mandatory rules to keep following
 
