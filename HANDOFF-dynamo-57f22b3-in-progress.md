@@ -1,8 +1,8 @@
 HANDOFF: dynamo-57f22b3-machine-learning-and-ai (PR #1)
 =========================================================
-Last updated: after pushing commit `8dc9d80` (2026-08-23), the crux redesign
-that answers `deep_review`'s block on `c87e4a9`. Pipeline run
-`32620650792` was in flight at the time of writing.
+Last updated: after pushing commit `8dc1215` (2026-08-23), the held-out
+rebuild that answers `pass2` 2/2 on `7c0c604`. Pipeline run `32625014553`
+was in flight at the time of writing.
 
 -----------------------------------------------------------------------
 STATUS IN ONE SENTENCE: the previous handoff's recommendation — REDESIGN the
@@ -15,7 +15,7 @@ result is pushed and awaiting gates.
 ## Repo / PR pointers
 
 - Local clone: `C:\Users\chara\Downloads\Handshake\dynamo-57f22b3-machine-learning-and-ai`
-- Branch: `submission`, currently at commit `8dc9d80` (nothing uncommitted)
+- Branch: `submission`, currently at commit `8dc1215` (nothing uncommitted)
 - PR: https://github.com/handshake-project-dynamo/dynamo-57f22b3-machine-learning-and-ai/pull/1
 - Category/subcategory (fixed, do not edit): Machine Learning and AI / NLP and language models
 - Model/agent under test: Opus-4.8 / Terminus-2
@@ -102,20 +102,80 @@ cmp_04 0.3333 (F), cmp_05 0.0 (T), cmp_06 0.0043 (T), cmp_07 0.0338 (F).
   copied from the oracle's output.
 - `README.md` synced in the same commit.
 
-## The main open risk to watch on this run
+## Where this stands now (read this first)
 
-Difficulty, not fairness. Fairness/validity is what was just fixed; the
-uncertain part is whether two axes are enough to keep the pass rate low.
-Per the playbook, correction-for-multiplicity is a memorised technique, so if
-`pass2`/`trials` come back solved, **the fix is another independent axis, not
-a harder version of these two** — and per `dynamo-83cfbd9` §3.3 it should be
-something *counterintuitive* rather than something merely standard.
+Two rounds have landed since the previous handoff:
 
-Deliberately **not** used, and worth knowing why: a "significant degradation
-is not an improvement" direction axis was designed and rejected — cmp_01's
-mean difference is negative while its median is positive (the outlier flips
-the mean), so direction there would be a mean-vs-median judgment call, which
-is the exact class of contestable ground truth that just blocked the PR.
+**Round A — `7c0c604`** (originally `8dc9d80`; force-pushed only to strip a
+`Co-Authored-By: Claude` trailer, content byte-identical). Replaced the
+contested ties-vs-outlier crux with two axes: per-comparison test selection
+(now uncontested) and a batch-level error budget. **Result: rubric review,
+`validation`, `similarity`, `cosine_similarity` all PASS — the validity fix
+held and discoverability was never raised again. `pass2` returned 2/2 SOLVED.**
+Too easy.
+
+Why, from the traces: both agents opened with **exhaustive enumeration**
+("computing Shapiro-Wilk, paired t, Wilcoxon, and sign test for all 7
+comparisons") and then "correctly inferred Bonferroni correction from the FWER
+constraint". That is `dynamo-83cfbd9` §3.3 for the third time in this PR — a
+**memorised** technique gets solved on its own.
+
+Also recorded: both agents used the **sign test** rather than Wilcoxon on the
+outlier comparisons and still passed, because both p-values round to 0.0000.
+Those comparisons discriminate mean-based from rank-based, not one rank-based
+test from another.
+
+**Round B — `8dc1215`** (current). The structural diagnosis: **there was no
+held-out data**, so every diagnostic the agent could run, it ran on the graded
+data — nothing could be concealed. Every accepted task in this family
+(`dynamo-93acae6`, `dynamo-83cfbd9`, `dynamo-09b4f4b`) grades a *script*
+against held-out inputs.
+
+New shell: the agent writes `/app/decide.py`, sees one sample batch (input
+only, no expected output), graded **all-or-nothing** on that sample plus
+**four held-out batches** of 6/7/8/9 comparisons. The two prior axes are kept
+as necessary-but-not-sufficient, and a third is added that the sample
+**structurally cannot reveal**: the corpus is the independent unit of analysis,
+because the documents of one corpus were scored as a block. In the sample every
+document is its own corpus, so the collapse is the identity and a solver
+ignoring the labels reproduces the sample exactly; in the held-out batches
+documents cluster 8x4 and ignoring the labels inflates the effective sample
+size fourfold. Textbook pseudoreplication, stated as a premise about data
+collection, never as a technique.
+
+**A real hole was found and closed while building this:** `/tests` is mounted
+at verify time, which is also when the agent's script runs, so ground truth
+would have been readable to a submission that echoed it. The verifier now loads
+every golden into memory and removes them from disk before invoking the script.
+Confirmed with a mutant that does no statistics and just copies the matching
+golden file: scores 0.0.
+
+## Local verification on `8dc1215`
+
+- `harbor oracle` = 1.0, `nop` = 0.0.
+- Five wrong strategies each run through the full verifier at 0.0: ignoring
+  `corpus` (the concealed axis), per-comparison 0.05, always t-test, always
+  Wilcoxon, fabricated p-values. Reference script restored, reconfirmed 1.0.
+- The generator asserts per batch: Bonferroni/Sidak/Holm/Holm-Sidak all agree;
+  no p-value within 25% of its threshold; the sample is inert under the corpus
+  axis to 1e-12; every held-out batch flips on it.
+
+## If this round also comes back solved
+
+Do **not** reach for a fourth statistical axis inside the same shell. The
+pattern across three rounds is that this model defeats anything computable on
+visible data. What is left untried and has playbook support:
+- Make the outlier comparisons discriminate *between rank-based tests* (the
+  sign-test near-miss above) so they stop being free.
+- Add a second concealed axis in the held-out batches only — e.g. a batch where
+  a corpus contributes a single document, or where corpora are unbalanced, so
+  a naive equal-weight collapse is wrong.
+
+Deliberately **not** used, and worth knowing why: a "significant degradation is
+not an improvement" direction axis was designed and rejected — the outlier
+comparisons have a negative mean but positive median, so direction there would
+be a mean-vs-median judgment call, the exact class of contestable ground truth
+that blocked `c87e4a9`.
 
 ## Mandatory rules to keep following
 
