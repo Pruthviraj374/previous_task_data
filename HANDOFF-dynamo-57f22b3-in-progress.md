@@ -17,7 +17,7 @@ Read "Where this stands now" below before anything else.
 ## Repo / PR pointers
 
 - Local clone: `C:\Users\chara\Downloads\Handshake\dynamo-57f22b3-machine-learning-and-ai`
-- Branch: `submission`, currently at commit `41cc44a` (nothing uncommitted)
+- Branch: `submission`, currently at commit `21df756` (nothing uncommitted)
 - PR: https://github.com/handshake-project-dynamo/dynamo-57f22b3-machine-learning-and-ai/pull/1
 - Category/subcategory (fixed, do not edit): Machine Learning and AI / NLP and language models
 - Model/agent under test: Opus-4.8 / Terminus-2
@@ -383,6 +383,79 @@ cost 2+ full pipeline cycles per attempt. Bring it back to the user: either
 take this to a different crux family within the fixed category (a sixth
 design), or call this category-model pairing a genuine dead end and write the
 case study.
+
+
+## Round F — `21df756` (current)
+
+`41cc44a` (the symmetric... no wait, the FIRST cmp_07, using skewed
+pos/neg-cluster data) reached `qc_gate` for a THIRD time and blocked on two
+findings, both genuine:
+
+**A6 (Oracle Edge-Case or Logic Bug) — found by qc_exec's execution probing,
+not the LLM reviewer.** `decide()` computed `significant` from the
+full-precision p but reported `p_value=round(p,4)`. The verifier's own
+consistency check re-derives `significant` from the REPORTED (rounded) value,
+so whenever true p sits between a batch threshold and that threshold's nearest
+4-decimal grid point, the two disagree. QC constructed a single-comparison
+batch (threshold=0.05, true p~0.049991) where the old code reported
+`significant=True, p_value=0.05` — and `0.05 < 0.05` is false, so the
+REFERENCE's own output failed its own verifier. Fixed: `p_value =
+round(unadjusted_p(c), 4)` computed FIRST, then `significant = p_value <
+threshold` — decide from the same value you report. Zero shipped decisions
+change (25%-margin invariant already keeps every real p-value far from this
+window); verified directly against QC's exact reproduction input.
+
+**B1, reopened from a NEW angle — and this one was self-inflicted.** Round E's
+fix for B5 (making Wilcoxon strictly beat the sign test) used SKEWED data
+(pos/neg cluster mixture, skew ≈ -1.3 to -1.7) for `cmp_07`. QC's LLM reviewer
+found that skew itself is a problem: Wilcoxon's OWN validity assumption is
+that the differences are symmetric. A rigorous reading of "assumptions must
+hold" could argue skewed data invalidates Wilcoxon too, leaving the sign test
+(no symmetry needed) as the ONLY valid choice — the opposite of golden. **The
+fix for B5 had reopened B1 from the other side.** Checked directly: `cmp_07`'s
+`skewtest` rejected symmetry decisively (p ~ 0.0004-0.0037).
+
+**The corrected fix, and the general lesson:** keep the mechanism (Wilcoxon
+beats sign test on power) but change the SHAPE to one where symmetry can't be
+contested. `cmp_07` is now uniform-shifted (`Uniform(mu-hw, mu+hw)`,
+mu != 0) — genuinely symmetric (`skewtest` p ~ 0.27-0.53, fails to reject on
+every batch) but still non-normal (Shapiro rejects on KURTOSIS, not skew). For
+a symmetric light-tailed shape, Wilcoxon's efficiency edge over the sign test
+is textbook and undisputed (Pitman ARE = 1/3 for uniform) — there is no
+rigorous counter-argument left. Reconfirmed: sign-test-everywhere still
+diverges from golden on `cmp_07` in every batch; the precision-weighted
+t-test variant (accepted two rounds ago) is unaffected.
+
+**The general lesson for any future "make test X necessary" construction in
+this task:** if the argument for X's necessity routes through "the data isn't
+[some property]," check whether that SAME departure could be read as
+invalidating X's OWN validity assumption too. Skew defeats the sign test's
+power argument for Wilcoxon, but skew also attacks Wilcoxon's own symmetry
+assumption — a self-defeating construction. Kurtosis (thin/thick tails) does
+not have this problem for the tests used in this task.
+
+### Local verification on `21df756`
+
+- `harbor oracle` = 1.0, `nop` = 0.0.
+- Full ten-strategy mutation suite reconfirmed (see `mut7.py` pattern in
+  scratchpad history if resuming this session's context — otherwise rebuild
+  from `task/solution/decide.py`'s current logic).
+- A6's rounding mutant is NOT detectable via `harbor run --agent oracle` on
+  the shipped batches by construction (no shipped p-value is anywhere near a
+  rounding boundary) — it was verified with a standalone targeted script
+  reproducing QC's exact adversarial input instead. Don't expect the harbor
+  mutation harness alone to catch this class of bug in the future; construct
+  a targeted input when the finding names specific numbers.
+
+### If qc_gate finds a FOURTH thing
+
+Same meta-lesson as Round E, reinforced: before asserting ANY claim in
+task.toml/README of the form "X is legitimate" or "X is the only valid
+choice," actively try to argue the OPPOSITE using the instruction's own stated
+rules, not just check that X reproduces the right booleans numerically.
+Numerical reproduction is necessary but not sufficient — QC's LLM reviewer is
+specifically hunting for a textually-defensible alternative reading, and two
+of the three qc_gate blocks so far were exactly that.
 
 ## Mandatory rules to keep following
 
