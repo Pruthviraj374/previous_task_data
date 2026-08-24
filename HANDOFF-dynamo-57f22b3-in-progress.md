@@ -543,6 +543,56 @@ fixes -- do not assume it's clean. Route any new qc_gate finding through the
 same discipline as Rounds E/F: before asserting any "X is legitimate" claim,
 try to argue the opposite from the instruction's own stated rules first.
 
+## Round H — `d3832e5` (current). Full redesign, different crux family.
+
+Per the standing instruction, the `ba6174e` pass2 failure (2/2 solved, both
+trials fully correct on all 34 booleans across all five batches, well within
+the raised 3600s budget, no timeout confound) was treated as a real
+difficulty signal, not another wording target, and traced back through the
+whole handoff before any fix was proposed. Conclusion, put to the user: five
+independent statistical mechanisms (convention+evidence, batch budget,
+pseudoreplication, token-weighted pooling, power-dominance among valid
+tests) had now each individually fallen to "state a premise fairly, watch
+this model derive the standard consequence," and this run was the same
+pattern confirmed a sixth time with everything stacked together. Recommended
+against a seventh axis in the same shell; user chose a full redesign to a
+different crux family within the fixed category rather than a dead-end
+writeup.
+
+**New design**, following `dynamo-658c4fa` (PMML rulepack scoring) and
+`dynamo-ca30fed` (LoRA merge) — both already-accepted in this exact category
+— rather than another statistics-premise task: rebuild a tokenizer-encoding
+script from archived Hugging Face `tokenizers` library configs
+(`tokenizer.json`). The library and file format are named outright as the
+authority; correctness is simply matching what the real library's
+`encode()` produces, so there is no disclosure-calibration judgment call
+anywhere — the exact failure mode that consumed all five prior designs.
+
+Axes (7, each independently real/documented, verified against the actual
+`tokenizers==0.23.1` library before any task code was written): model type
+(BPE vs WordPiece), `ignore_merges`, `fuse_unk`, `byte_fallback`,
+`continuing_subword_prefix`/`end_of_word_suffix`, `add_prefix_space`,
+`TemplateProcessing` (combined with a normalizer sequence). The shipped
+sample is a plain byte-level BPE config exercising none of them — a
+genuinely ordinary GPT-2-era `tokenizer.json`, not a contrived one.
+
+Verified before pushing: a pure-Python reference (`solution/encode.py`)
+reproduces all 8 configs' real-library output exactly (23 lines). A naive
+byte-level-BPE-only implementation reproduces the sample (3/3) and fails all
+7 held-out configs. `harbor oracle` = 1.0, `nop` = 0.0. Runtime sandbox
+(`tests/run_agent.py`, a `sys.addaudithook` launcher) blocks
+`tokenizers`/`transformers`/`sentencepiece`/`tiktoken`/network/subprocess in
+the submitted script, matching instruction.md's own stated constraint;
+confirmed directly against a probe script (`tests/probes/cheat_import.py`),
+not assumed from the image's contents. README.md rewritten: old Rounds A-G
+statistical narrative compressed to one paragraph (git log has the rest);
+full new design documented in the current register.
+
+Pushed as `d3832e5`. Pipeline result not yet known as of this entry — check
+`gh run list --repo handshake-project-dynamo/dynamo-57f22b3-machine-learning-and-ai`
+and read the result in full before doing anything else, same standing
+instruction as before if it fails.
+
 ## Mandatory rules to keep following
 
 - `harbor run -p task --agent oracle` must show reward 1.0 and `--agent nop`
