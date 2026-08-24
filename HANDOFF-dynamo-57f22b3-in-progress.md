@@ -1,17 +1,67 @@
 HANDOFF: dynamo-57f22b3-machine-learning-and-ai (PR #1)
 =========================================================
-Last updated: after pushing `41cc44a` (2026-08-24). See "Round E" below. This
-PR has now reached qc_gate twice with genuine pass2 passes and only single,
-fixable findings each time -- the design is close. Read Round E before doing
-anything.
+Last updated: 2026-08-24, after pushing `ba6174e`. The session was stopped
+HERE, deliberately, by explicit user instruction — not because of a pipeline
+failure. Read the STANDING INSTRUCTION and RESUME PROMPT sections immediately
+below before touching anything else, including before reading Round G.
 
 -----------------------------------------------------------------------
-STATUS IN ONE SENTENCE: the crux redesign fixed the VALIDITY problem for good
-(rubric + deep_review's discoverability concern have not been raised since),
-but the redesigned task was then solved 2/2 by pass2, so the shell itself was
-rebuilt to grade a script against held-out batches with a concealed
-pseudoreplication axis — that rebuild is `8dc1215`, pushed and awaiting gates.
-Read "Where this stands now" below before anything else.
+STANDING INSTRUCTION FROM THE USER (2026-08-24) — APPLIES TO EVERY FUTURE
+FAILURE ON THIS TASK, NOT JUST THE NEXT ONE:
+
+This PR is at 32 commits and has not reached `accepted`. The user's own words:
+"the next time commits fail, stop and reiterate all the related docs and
+verify why the previous commits failed, before going ahead with the new
+solution because we already did more than 25 commits im sure we are missing
+something."
+
+Concretely, this means: on the NEXT pipeline failure (any gate — rubric,
+pass2, deep_review, ava_review, qc_gate, trials, anything), DO NOT go straight
+from "read the new failure comment" to "design and push a fix," even if the
+fix seems obvious or narrow. Instead, first:
+
+1. Re-read this entire handoff file, front to back, including every Round
+   section (A through G) — not just the most recent one.
+2. Re-read the repo-root `README.md` in full — it has the complete prose
+   history this handoff compresses, including reasoning that didn't make it
+   into the handoff's condensed form.
+3. Re-read `task/task.toml`'s `difficulty_explanation`, `solution_explanation`,
+   and `verification_explanation` in full, and `task/instruction.md` in full.
+4. Look explicitly for a PATTERN across the failures, not just the latest
+   one in isolation: is the same underlying tension recurring under different
+   names (e.g. Round D and Round E were the SAME "is X a legitimate variant"
+   mistake happening twice; Round F's B1 was CAUSED by Round E's own B5 fix).
+   Write out, explicitly, whether the new failure is (a) genuinely
+   independent, or (b) a symptom of something upstream that was patched
+   locally instead of fixed at the root.
+5. Only after that review, decide whether to: fix forward (same as this
+   session has been doing), redesign a larger piece, or conclude this is a
+   genuine dead end for this category/model pairing and report that to the
+   user rather than continuing to push.
+
+This is a hard override of the general "iterate autonomously, don't wait for
+confirmation" instruction elsewhere in this project's standing config — it
+applies specifically to this task, given its length, starting now.
+
+-----------------------------------------------------------------------
+
+## RESUME PROMPT — paste this to start the next session on this task
+
+> Read `C:\Users\chara\Downloads\Handshake\dynamo-task-playbook\HANDOFF-dynamo-57f22b3-in-progress.md`
+> in full. This PR (`dynamo-57f22b3-machine-learning-and-ai`, branch
+> `submission`, currently at commit `ba6174e`) is at 32 commits without
+> reaching `accepted`. Before doing anything else: check the live pipeline
+> status for the run on `ba6174e` (it was still in progress when the last
+> session stopped) via
+> `gh run list --repo handshake-project-dynamo/dynamo-57f22b3-machine-learning-and-ai --limit 3`,
+> then read its result in full if complete. Per this handoff's STANDING
+> INSTRUCTION section, if that run (or any run after it) failed, do the full
+> doc-review-and-pattern-check described there BEFORE proposing or pushing any
+> fix — do not jump straight to a fix based on the latest failure comment
+> alone. Report what you find and your read on whether to keep iterating,
+> redesign more substantially, or call this a dead end, and wait for
+> direction before pushing anything.
+
 -----------------------------------------------------------------------
 
 ## Repo / PR pointers
