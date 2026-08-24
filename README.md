@@ -31,6 +31,12 @@ Each file is named after its task (`dynamo-<hash>-<category-slug>-case-study.md`
 - [dynamo-6edfe0d replay-deposit-ledger](dynamo-6edfe0d-replay-deposit-ledger.md) — Systems Infrastructure and Operations / Storage and filesystem administration; rebuilding a deposit gateway's ledger from an HFS Plus volume's journals; accepted on push 18
 - [dynamo-6wgviv8 statement-rollup-repair](dynamo-6wgviv8-statement-rollup-repair.md) — Debugging and Repair / Performance Debugging; a pure-Python task died at pass@5 three times (0/5, 1/5, 0/5) because disclosed rules just get implemented; rebuilt around SQLite's own documented behaviour and accepted
 - [dynamo-afed5c2 replay-run-histories](dynamo-afed5c2-replay-run-histories.md) — Model Training and ML Infrastructure / Training loops; a named public authority (TensorBoard's event-file reader) with only the occasion withheld; accepted at pass@5 0/5
+- [dynamo-04fda1d read-cavity-captures](dynamo-04fda1d-read-cavity-captures.md) — Machine Learning
+  and AI / Computer vision (first in category); a retired inspection cell's colour reader, with
+  four DNG 1.4.0.0 rules the shipped captures all leave inert; **three candidate cruxes died on
+  effect size, not on realism or latency**; `qc_gate` C3 answered once by covering the whole
+  geometry family and once by *deleting* an untested branch; a verifier that scored 1.000 for a
+  submission that computed nothing; accepted at pass@5 0/5
 - [dynamo-1286b70 depot-batch-claims](dynamo-1286b70-depot-batch-claims.md) — Debugging and Repair /
   Concurrency and synchronization debugging; **a rule your spec yields is not a stump** — the model
   read a precise spec and derived the cruxes 2/2, and only platform defaults (umask, `-15` vs shell
