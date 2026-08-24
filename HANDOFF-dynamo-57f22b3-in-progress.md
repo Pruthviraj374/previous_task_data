@@ -1,8 +1,9 @@
 HANDOFF: dynamo-57f22b3-machine-learning-and-ai (PR #1)
 =========================================================
-Last updated: after pushing `38e95c0` (2026-08-24). See "Round D" below --
-the design is now well-posed and fair, and the open question is no longer
-fairness but whether it is HARD ENOUGH. Read Round D before doing anything.
+Last updated: after pushing `41cc44a` (2026-08-24). See "Round E" below. This
+PR has now reached qc_gate twice with genuine pass2 passes and only single,
+fixable findings each time -- the design is close. Read Round E before doing
+anything.
 
 -----------------------------------------------------------------------
 STATUS IN ONE SENTENCE: the crux redesign fixed the VALIDITY problem for good
@@ -16,7 +17,7 @@ Read "Where this stands now" below before anything else.
 ## Repo / PR pointers
 
 - Local clone: `C:\Users\chara\Downloads\Handshake\dynamo-57f22b3-machine-learning-and-ai`
-- Branch: `submission`, currently at commit `38e95c0` (nothing uncommitted)
+- Branch: `submission`, currently at commit `41cc44a` (nothing uncommitted)
 - PR: https://github.com/handshake-project-dynamo/dynamo-57f22b3-machine-learning-and-ai/pull/1
 - Category/subcategory (fixed, do not edit): Machine Learning and AI / NLP and language models
 - Model/agent under test: Opus-4.8 / Terminus-2
@@ -321,6 +322,67 @@ family within Machine Learning and AI / NLP and language models, accepting that
 this is effectively a sixth design, or (b) report a genuine dead end for this
 category-model pairing and write the case study. Option (b) is defensible on the
 evidence and should be put to the user rather than decided unilaterally.
+
+
+## Round E — `23caadd` -> `38e95c0` -> `41cc44a` (current)
+
+`23caadd` (qc_gate B1/B5 instruction fixes) got `pass2` to pass as a genuine
+failure for the FIRST time in this PR, but both failures were verifier
+artifacts (agents used a sign test and a precision-weighted t-test, both
+legitimate, and only the graded-against-golden p-value rejected them) --
+`38e95c0` stopped grading the p-value against golden and required only that it
+be a real probability consistent with the submission's own decision.
+
+`38e95c0` then reached `qc_gate` for a second time -- further than any design
+in this PR -- and blocked on ONE finding: QC's own mutation search found that
+"always sign test instead of Wilcoxon" reproduces every disclosed sample
+decision, directly contradicting this design's own (mistaken) claim that the
+sign test was a "legitimate variant." It wasn't: the sign test discards
+magnitude and keeps only sign, so it is NEVER more powerful than Wilcoxon --
+it only looked legitimate because no comparison in the task happened to make
+that gap decide anything.
+
+`41cc44a` fixes this by CLOSING the gap, not re-wording around it: every
+held-out batch gains one more comparison (`cmp_07`, batch sizes now 7/8/9/10,
+not 6/7/8/9) built so Wilcoxon's use of the differences' magnitudes reaches
+significance where the sign test's sign-count-only view does not. The sample
+is untouched. Confirmed: "always sign test" now diverges from golden on
+`cmp_07` in every held-out batch; the precision-weighted t-test variant
+accepted previously is unaffected (it only applies where the t-test itself is
+valid, which `cmp_07` never is -- reconfirmed, zero flips). `decide.py` itself
+is UNCHANGED this round -- purely a data + docs fix.
+
+### Local verification on `41cc44a`
+
+- `harbor oracle` = 1.0, `nop` = 0.0.
+- **Ten** wrong strategies each 0.0 through the full verifier: the nine from
+  the previous round plus "always sign test wherever a rank test applies".
+- One legitimate variant (token-weighted arithmetic pooling) reconfirmed 1.0.
+- All batch/golden comparison counts cross-checked (sample=7, batch_01..04 =
+  7/8/9/10, goldens match).
+
+### If qc_gate finds a THIRD thing
+
+The pattern across both qc_gate rounds is QC running its own mutation search
+and finding a rival rule my own claims didn't actually rule out. Before
+re-wording anything, run the SAME kind of check myself first: for any claim of
+the form "X is a legitimate/equivalent variant," verify it by testing X as a
+full decision rule against ALL FIVE batches (not just spot-checking a few
+comparisons) and confirm zero flips -- if it isn't proven with that rigor,
+don't assert it in the docs. This is what should have been done before writing
+the sign-test claim in the first place.
+
+### If this round clears qc_gate and reaches `trials`
+
+Per Round D's note (still valid): four independent mechanisms have been
+defeated by this model already (convention+evidence, batch budget,
+pseudoreplication, token-weighted pooling), plus now a fifth refinement
+(power-dominance among valid tests). If `trials` blocks on "not hard enough,"
+do NOT add an eleventh mutation-defeating tweak unilaterally -- that has now
+cost 2+ full pipeline cycles per attempt. Bring it back to the user: either
+take this to a different crux family within the fixed category (a sixth
+design), or call this category-model pairing a genuine dead end and write the
+case study.
 
 ## Mandatory rules to keep following
 
