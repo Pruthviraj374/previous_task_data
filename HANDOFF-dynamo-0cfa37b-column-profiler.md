@@ -90,6 +90,38 @@ zoneinfo/real DST handling and solved in 5-8 minutes.** This is the load-
 bearing result — the one design that followed the proven playbook formula
 to the letter still fell to recall/transcription.
 
+## Update (2026-08-24): the calibrated re-test, and why it also failed
+
+After this handoff was first written and shown to the user, they asked for one more
+targeted test before deciding between A/B/C: design 5's `instruction.md` didn't just state
+the local-calendar-day premise, it explicitly named the stdlib tool
+(`the zoneinfo module is available for time-zone conversion`) — a direct pointer that the
+proven precedent (`experiment-analysis-frame`) never gives. Pushed `be471e1`, removing only
+that callout, byte-identical otherwise. (One intervening push, `91d0440`, fixed an unrelated
+false-positive static-rubric finding about the base image allegedly lacking system tzdata —
+verified wrong via direct `docker run` against the pinned digest, fixed anyway at zero cost.)
+
+**Result: pass@2 2/2 solved a fifth time.** Both agents independently reached for
+`zoneinfo.ZoneInfo` and reasoned explicitly about DST in their trajectories, *without* being
+told the module exists. The pass@2 analysis states it plainly: "IANA timezone name" plus
+"Python standard library" is enough on its own for this model to dispatch straight to
+`zoneinfo` — its prior knowledge of that specific pairing is strong enough that naming the
+tool was never load-bearing. **The tool-naming hypothesis is cleanly falsified.** The
+deeper diagnosis in the original handoff — this model transcribes any fully-stated
+procedural rule, and DST/timezone-via-IANA-name is squarely inside its confident prior
+knowledge, not a genuine derivation gap — stands uncontradicted, now on a fifth data point.
+
+The automated pass@2 suggestion for this run proposed a further axis: an unstated tie-break
+for two events (one `end`, one `activity`) sharing the exact same `event_ts` within one
+session. This is a different *kind* of difficulty (a genuine unstated tie-break, not a
+library-recognition pattern) and matches a class of axis that has worked elsewhere in the
+corpus (`copybook-extract-decoder`, `dynamo-a4b5561`, `iban-batch-validate`). But per the
+same empirical pattern already confirmed four times on this PR, if the tie-break rule is
+*disclosed* in `instruction.md` (the suggestion's own proposed fix), it will very likely be
+transcribed just like every other disclosed procedural rule so far — this is not a
+qualitatively different bet than designs 3/4 already were. Noted here rather than attempted
+without discussing it with the user first, per the agreed decision rule.
+
 ## What this pattern actually shows
 
 Four designs, four "2/2 solved" verdicts, spanning two structurally
