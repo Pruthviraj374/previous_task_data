@@ -17,7 +17,7 @@ Read "Where this stands now" below before anything else.
 ## Repo / PR pointers
 
 - Local clone: `C:\Users\chara\Downloads\Handshake\dynamo-57f22b3-machine-learning-and-ai`
-- Branch: `submission`, currently at commit `21df756` (nothing uncommitted)
+- Branch: `submission`, currently at commit `ba6174e` (nothing uncommitted)
 - PR: https://github.com/handshake-project-dynamo/dynamo-57f22b3-machine-learning-and-ai/pull/1
 - Category/subcategory (fixed, do not edit): Machine Learning and AI / NLP and language models
 - Model/agent under test: Opus-4.8 / Terminus-2
@@ -456,6 +456,42 @@ rules, not just check that X reproduces the right booleans numerically.
 Numerical reproduction is necessary but not sufficient — QC's LLM reviewer is
 specifically hunting for a textually-defensible alternative reading, and two
 of the three qc_gate blocks so far were exactly that.
+
+
+## Round G — `ba6174e` (current)
+
+`21df756` (the A6 rounding fix + symmetric cmp_07 for B1) never reached
+`qc_gate` this round -- `pass2` blocked first, but NOT on a task defect: 1/2
+solved cleanly (all 34 booleans across all five batches correct again), and
+the second trial spent its FULL 1800s budget on legitimate exploratory
+analysis (correctly identified corpus aggregation, normality-first hierarchy,
+Holm/Bonferroni) and was cut off mid-response before ever writing
+`/app/decide.py`. That's a soft-timeout (`low_timeout`=FAIL), not a valid fail,
+so pass2's own gate held rather than treating it as evidence and its
+recommendation was explicit: "Raise `[agent].timeout_sec` so the agent can
+finish, then re-run."
+
+Fixed with a pure config change: `[agent].timeout_sec` 1800 -> 3600 (matches
+pass@2's own hard cap, so only the tighter task-level ceiling underneath it is
+removed). `harbor oracle`/`nop` don't depend on this at all -- reconfirmed
+1.0/0.0 regardless, no mutation re-testing needed since nothing about the
+task's logic changed.
+
+**Worth tracking:** the timed-out trial's own step-13 prototype used raw
+per-document differences instead of the required token-weighted corpus-level
+pooling -- i.e. it had NOT yet solved the pseudoreplication+pooling axis when
+it ran out of time. More budget was more likely to convert this into a genuine
+fail (the correct, useful signal for this gate) than a second clean solve. If
+the next run instead comes back 2/2 solved with real code from both trials,
+that IS a genuine difficulty signal (the extra time let a second agent also
+get everything right) and should be read as evidence, not dismissed as noise.
+
+### If this round passes pass2 and reaches qc_gate again
+
+The design at `21df756` has not yet been qc_gate-tested with its current A6/B1
+fixes -- do not assume it's clean. Route any new qc_gate finding through the
+same discipline as Rounds E/F: before asserting any "X is legitimate" claim,
+try to argue the opposite from the instruction's own stated rules first.
 
 ## Mandatory rules to keep following
 
