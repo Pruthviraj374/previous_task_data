@@ -588,10 +588,27 @@ not assumed from the image's contents. README.md rewritten: old Rounds A-G
 statistical narrative compressed to one paragraph (git log has the rest);
 full new design documented in the current register.
 
-Pushed as `d3832e5`. Pipeline result not yet known as of this entry — check
+Pushed as `d3832e5`. Result: rubric review, `validation`, `similarity`,
+`cosine_similarity` all passed clean on the first push of the new design.
+`pass2` blocked 0/2, but as a soft-timeout, not a design defect -- both
+trials built a sound, correctly-structured stdlib-only reimplementation
+(both independently ran differential testing against the real library
+during development) and were still actively debugging exactly the intended
+traps (`byte_fallback`'s `<0xXX>` vocab-key format; `TemplateProcessing`'s
+id-vs-string-name lookup) when the 3600s wall hit. `approach_validity` and
+`difficulty_crux` PASS for both trials; reviewer found no evidence of a spec
+or verifier defect. Note for calibration: this PR's Round G (old design) had
+the identical soft-timeout shape, and raising the timeout there revealed the
+task was too easy (2/2 solved), not genuinely hard -- so a repeat of that
+outcome here is a real possibility, not just a formality.
+
+`98d90f1`: `[agent].timeout_sec` raised 3600 -> 7200 (pure config change,
+`harbor oracle`/`nop` reconfirmed unaffected: 1.0/0.0). Pushed. Pipeline
+result not yet known as of this entry — check
 `gh run list --repo handshake-project-dynamo/dynamo-57f22b3-machine-learning-and-ai`
 and read the result in full before doing anything else, same standing
-instruction as before if it fails.
+instruction as before if it fails. Given the raised agent timeout, this run
+may take noticeably longer than prior rounds to report back.
 
 ## Mandatory rules to keep following
 
