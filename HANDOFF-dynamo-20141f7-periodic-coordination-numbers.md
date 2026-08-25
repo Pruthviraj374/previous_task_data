@@ -349,14 +349,62 @@ to (analogous to gemmlowp's shift-sign, RDFC-1.0's specific step-ordering).
 Genuinely harder to find in this subcategory than it was in ML/GPU-kernel
 or RDF/graph domains, since most "chemistry facts" that are precisely
 disclosable are, definitionally, precisely computable too (that tension is
-now empirically demonstrated four times over on this PR). Candidates not
-yet evaluated against the sharpened bar: real CIF `_atom_site_occupancy`
-split-site/multi-species-per-site handling conventions (a real, documented
-pitfall, but need to verify the decisive rule is a genuine arbitrary
-convention and not itself derivable from "occupancy must sum to <= 1 per
-site" logic); specific numeric encoding quirks in a real, obscure
-crystallographic file format (not CIF itself, which is thoroughly
-documented/mainstream) that only one real parser's source clarifies.
+now empirically demonstrated four times over on this PR).
+
+**Post-decision update (2026-08-25): six additional candidates evaluated
+against the sharpened bar, none cleared it — recorded so this search isn't
+repeated from scratch.** After the user said "proceed with your own
+judgement" (authorizing Option A), the following were considered and each
+rejected before implementation, to avoid shipping a fifth low-confidence
+design:
+
+- **CIF `_atom_site_occupancy` split-site/disorder-group handling.** On
+  inspection, the "special" arithmetic (`occupancy x multiplicity` per
+  disorder-group record) is exactly what real software already does
+  naturally, once multiplicity is known — and multiplicity-derivation is
+  design 2's already-defeated mechanism. No new crux, just design 2 wearing
+  a different label.
+- **Bond valence sum (Brown-Altermatt method), using disclosed (not
+  recalled) empirical R0/B parameters.** Verified the real formula
+  (`s = exp((R0-R)/B)`, B=0.37 A "universal" constant, R0 ion-pair-specific
+  — confirmed via IUCr/Acta Cryst sources). Genuinely non-derivable
+  parameters (a real escape from "everything here is derivable"), BUT the
+  hard part of computing a BVS is finding all neighbor anions under general
+  periodic boundary conditions — exactly design 1's already-defeated
+  mechanism — with the empirical constants just being data plugged into a
+  final weighted sum at the end. Swapping "count neighbors" for "sum
+  exp(...) over neighbors" doesn't add real difficulty on top of a
+  geometry problem already shown solvable.
+- **pymatgen (symprec=0.01) vs spglib (symprec=1e-5) symmetry-detection
+  tolerance discrepancy.** Real, verified via web search, but building a
+  task around it requires implementing full symmetry-detection from
+  possibly-noisy positions — open-ended enough to risk failing `solvable`
+  (more than a few hours of expert work), not a tractable scope.
+- **Space-group origin-choice / cell-setting ambiguity** (Origin 1 vs 2,
+  cell choice 1/2/3 for monoclinic groups). Only matters when *converting
+  between* settings; if all input data is given in one fully-specified
+  Cartesian/fractional convention throughout, there's no ambiguity left to
+  exploit.
+- **PDB hybrid-36 numeric-overflow encoding** (real, used when atom/residue
+  serial numbers exceed fixed-column decimal capacity). Genuinely obscure
+  and arbitrary, but reads as a pure data-encoding puzzle rather than
+  domain-expert scientific reasoning — real risk of an `essential_difficulty`
+  FAIL for "clerical detail," the same disqualifier flagged early in this
+  task's history.
+- **Mixed-valence bond-valence-sum oxidation-state disambiguation**
+  (try each candidate oxidation state's R0, pick whichever gives the most
+  chemically sane total). Rejected specifically because it's a different
+  instance of the SAME enumeration-defeats-evidence pattern already
+  documented in `dynamo_enumeration_defeats_evidence_inference` from a
+  different task (BPE tie-break conventions) — trying a small set of
+  disclosed candidates against evidence and picking the best match is
+  exactly what this model's agents do well.
+
+No sixth idea reached implementation. The honest state: after four shipped
+designs plus six further candidates evaluated on paper, no clearly-different,
+tractably-scoped, high-confidence crux has been identified within this
+subcategory. Recommending the user weigh in on Option B/C below rather than
+authorizing a low-confidence fifth build.
 
 **Option B — reconsider category/subcategory fit now.** Four consecutive
 "too easy" results across three genuinely different mechanisms, all within
