@@ -56,3 +56,11 @@ Each file is named after its task (`dynamo-<hash>-<category-slug>-case-study.md`
   the target image, never from docs; final AVA block fixed by making the verifier stricter rather than
   the instruction looser, because pass@2 had just started passing and every push re-rolls it; accepted
   at pass@5 2/5
+- [dynamo-c086412 replay-flash-capture](dynamo-c086412-replay-flash-capture.md) — Hardware, Embedded,
+  and Low-Level Systems / **Embedded and firmware** (first in subcategory); emulating a **real** 25-series
+  SPI NOR part is the escape from `decode-vibration-log`'s "a fictional decode format has no fair-and-hidden
+  middle" — five real device behaviours the shipped programming session makes inert; the single `qc_gate` A6
+  (page-buffer semantics on a >256-byte program) was a genuine reference bug whose correct fix **became the
+  fifth axis** and took down a trial that had solved everything else — the first gate-driven axis in this
+  corpus to actually gate; axis ranking measured wrong three times on one design; accepted in two pushes at
+  pass@5 0/5, avg@5 0.000, rubric 31/31 both pushes
