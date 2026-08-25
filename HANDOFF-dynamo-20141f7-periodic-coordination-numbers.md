@@ -406,6 +406,43 @@ tractably-scoped, high-confidence crux has been identified within this
 subcategory. Recommending the user weigh in on Option B/C below rather than
 authorizing a low-confidence fifth build.
 
+**Option C (compute/scale-forcing) also evaluated in depth, also declined.**
+Considered reviving design 1's already-verified triclinic-geometry code
+(`e0822f1`) with the crux reframed entirely around performance: large atom
+counts (thousands+) under a genuinely skewed cell, tight enough verifier
+memory/time budget that naive O(N^2 x S) brute force (even fully vectorized)
+fails, forcing real spatial decomposition (a skew-aware cell list, since a
+naive 3x3x3-neighbor-bucket cell list is documented to be WRONG for
+sufficiently skewed triclinic cells -- this is real: LAMMPS enforces a hard
+tilt-factor limit specifically because of this). This is a genuinely
+different SKILL (systems/algorithmic engineering under constraints) from
+the four "derive a correct formula" attempts, and the rubric explicitly
+sanctions "architectural decisions... time/resource constraints" as a valid
+essential_difficulty source.
+
+Declined without building, for two reasons: (1) a memory-only constraint
+has an easy escape hatch that defeats the intended forcing function without
+requiring real algorithmic insight -- chunked/blocked brute-force computation
+(a completely standard numpy pattern) reduces peak memory without improving
+time complexity, so the constraint has to be TIME-binding even under good
+vectorization, which requires push atom counts into the tens of thousands to
+reliably exceed a real verifier timeout -- straining "realistic structure"
+framing and requiring substantial new empirical tuning to get right with
+confidence; (2) more fundamentally, this model has now shown strong,
+consistent first-principles derivation ability on every OTHER well-posed
+algorithmic/geometric problem tried on this PR (lattice reduction, metric
+tensors, image-shift bounds, symmetry orbits) -- "implement a working
+skew-aware cell list" is a comparably well-posed, comparably derivable
+engineering problem, and I do not have a way to raise confidence this
+escapes the same pattern without actually building and testing it (a
+substantial, uncertain-payoff investment). This also matches a prior
+cross-task finding already in memory
+(`dynamo_enumeration_defeats_evidence_inference`): forcing a genuine
+compute-timeout via data scale was confirmed NOT to work in Python at
+realistic sizes on a different task, for a related reason (Python/numpy
+throughput at "realistic" scale rarely creates a genuine wall the way it
+might in a compiled language).
+
 **Option B — reconsider category/subcategory fit now.** Four consecutive
 "too easy" results across three genuinely different mechanisms, all within
 one subcategory (first-ever task in "Chemistry and materials workflows"),
