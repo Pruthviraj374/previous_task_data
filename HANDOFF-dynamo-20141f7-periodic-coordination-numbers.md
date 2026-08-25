@@ -1,29 +1,36 @@
 HANDOFF: dynamo-20141f7-scientific-computing-and-domain-science (PR #1)
 ========================================================================
-Last updated: after pass@2 returned 2/2 solved on commit `e0822f1`
-(2026-08-25), the third independent pass@2 sample on the same underlying
-design.
+Last updated: after pass@2 returned 2/2 solved AGAIN on commit `5b017a4`
+(2026-08-25) — the second design's second consecutive "too easy" result,
+and the third "too easy" pass@2 verdict overall across two full designs on
+this PR.
 
 -----------------------------------------------------------------------
-STATUS IN ONE SENTENCE: one design (compound triclinic-minimum-image +
-unwrapped-input-robustness crux), hardened through 3 QC (mutation-testing)
-fix rounds and 12 commits, has gotten a genuine pass@2 valid failure twice
-(1/2, 1/2) and a clean 2/2 solve once — the clean-solve trial shows both
-agents independently building fully general, correct algorithms, one of
-which self-caught its own initial mistake via differential testing against
-a self-built brute-force reference. This is a decision point, not a bug
-to fix.
+STATUS IN ONE SENTENCE: design 1 (periodic-geometry, compound triclinic +
+unwrapped-input crux) hit a self-testing-resistance wall after 2 genuine
+pass@2 valid failures + 3 QC rounds; the user chose to redesign (Option B
+from the prior version of this handoff); design 2 (site-multiplicity from
+disclosed real symmetry operations, purpose-built to resist self-testing
+via a measure-zero-event crux) hit a DIFFERENT wall twice in a row — both
+times the deciding crystallographic concept (Wyckoff-multiplicity dedup,
+then periodic minimum-image coincidence) turned out to be elementary,
+foundational training-data knowledge the model applies correctly without
+needing to derive or discover it at all. This is again a decision point,
+not a bug to fix — and it now looks less like "wrong specific fact" and
+more like "any concept-application crux in mainstream crystallography is
+within this model's reach," which should inform what's tried next.
 -----------------------------------------------------------------------
 
 ## Repo / PR pointers
 
 - Local clone: `C:\Users\chara\Downloads\Handshake\dynamo-20141f7-scientific-computing-and-domain-science`
-- Branch: `submission`, currently at commit `e0822f1` (nothing uncommitted)
+- Branch: `submission`, currently at commit `5b017a4` (nothing uncommitted)
 - PR: https://github.com/handshake-project-dynamo/dynamo-20141f7-scientific-computing-and-domain-science/pull/1
 - Category/subcategory (fixed, do not edit): Scientific Computing and Domain Science / Chemistry and materials workflows
   (first task in this exact subcategory — no prior in-category precedent existed to check against)
 - Model/agent under test: Opus-4.8 / Terminus-2
-- Root `README.md` describes the current design in full, including the QC-fix history.
+- Root `README.md` describes the current (design 2, site-multiplicity) design in full, including its own pass@2 iteration history.
+- Task identity changed with the redesign: artifact is now `/app/compute_multiplicity.py`, `[task].name = "dynamo/site-multiplicity"` (was `dynamo/periodic-coordination-numbers`).
 
 ## The design, in order, and exactly what happened
 
@@ -179,43 +186,120 @@ platform's own "Rerun Recommended: YES" suggests this is plausible), there
 is a real risk pass@5 lands at 1-2/5 and the task is rejected downstream
 after clearing pass@2.
 
-## The decision this handoff exists to get
+## Design 2 (site-multiplicity): what was tried, chosen per the user's
+## Option B answer, and how it also failed
 
-**Option A — push once more, cheap, stochastic.** Pass@2 is genuinely
-stochastic and the platform explicitly suggests rerunning. A near-zero-cost
-push (e.g., a trivial docstring tweak, or literally re-triggering CI) could
-land another valid failure and let the pipeline proceed to pass@5, where the
-real test (≥3/5) happens. Low cost, but the ~33% empirical trial-failure
-rate makes pass@5 acceptance a real coin-flip-or-worse even if pass@2 clears
-again — this may just delay hitting the same wall one stage later.
+Per the user's explicit choice (Option B above), redesigned away from
+periodic-image geometry entirely. New crux (commit `9aa9715`): given an
+atom's fractional coordinates and a FULLY DISCLOSED list of real symmetry
+operations (rotation + translation, taken from real published space groups
+— P-1, P2_1/c, C2/c, P2_1 2_1 2_1, verified against the International
+Tables for Crystallography via web search before use — not invented, not
+named/lookupable by the agent), compute the atom's site multiplicity: the
+number of distinct positions the operations generate. All data disclosed,
+no external-lookup burden. The intended crux: an atom on a symmetry element
+(inversion center, rotation axis) generates FEWER distinct positions than
+the operation count, but "apply every operation, don't deduplicate" is a
+natural implementation that's correct for any GENERIC-position atom — a
+measure-zero event for an agent's own self-chosen test coordinates,
+designed specifically to defeat the self-testing mechanism that killed
+design 1.
 
-**Option B — redesign toward a genuinely externally-grounded,
-self-testing-resistant crux**, per the winning formula already validated
-elsewhere in this playbook (`dynamo-602128a`'s gemmlowp rounding,
-`dynamo-3779991`'s RDFC-1.0 blank-node canonicalization): a crux where the
-"correct" answer depends on a real external standard/algorithm's specific
-step, not on geometric first-principles reasoning alone — so an agent's own
-brute-force self-test can't validate correctness without *already* knowing
-the external rule. Within Chemistry and materials workflows, the strongest
-candidate considered but not yet built: symmetry-equivalent atom position
-generation from a real space-group's full operator list (International
-Tables for Crystallography) — genuinely requires applying every operation,
-not just generators, handling centering translations, and deduplicating
-overlapping images; there's no way to construct an independent "obviously
-correct" brute-force reference without external crystallographic data,
-unlike periodic-image geometry which is fully first-principles-derivable.
-Higher effort (new instruction, solve.py, tests, fixtures from scratch), and
-carries its own version of the disclosure-vs-difficulty tension (must avoid
-naming any specific tool/library that would hand over the exact operator
-data via a two-query search) — not risk-free, but addresses the
-*structural* cause rather than another instance of the same wall.
+**Result 1 (`9aa9715`): pass@2 2/2 solved, first push.** But the *reason*
+mattered: both agents wrote correct deduplication logic on their first
+attempt, no debugging or self-testing needed at all. Reviewer's own
+diagnosis: "established training-data knowledge of crystallographic
+multiplicity algorithms." **This falsifies the self-testing-resistance
+premise the design was built on** — it doesn't matter that self-testing
+can't discover the bug if the model already knows the correct approach
+cold, without needing to discover anything. The rubric reviewer had flagged
+this risk pre-emptively on the very first review: "borderline PASS... a
+strong model could plausibly one-shot [this]... elementary to a
+crystallographer."
 
-**Option C — accept this task has reached a defensible-but-uncertain state
-and submit as-is**, since pass@2 alone is not the acceptance gate (pass@5
-is) and the design has demonstrably passed pass@2 with genuine, reviewer-
-confirmed valid failures on 2 of 3 samples — it's possible pass@5 lands
-≥3/5 despite the concerning trend. Not recommended without at least trying
-Option A first, given the near-zero cost of a re-roll.
+The platform's automated pass@2 difficulty suggestion additionally
+identified a compounding, directly-fixable issue: `instruction.md`'s
+coincidence-rule wording ("two resulting positions ... count as the same
+position if every fractional coordinate differs by less than `1e-6`")
+handed over the *entire* comparison procedure verbatim, not just the goal.
+
+**Fix attempted (`5b017a4`):** reworded `instruction.md` to state the goal
+(count distinct positions, understood periodically) rather than the
+mechanical procedure; this also surfaced and fixed a genuine latent
+correctness bug the suggestion named — naive per-component coincidence
+comparison isn't periodicity-aware (fractional coordinates are points on a
+3-torus; two independently-wrapped images of the same point can legitimately
+straddle the `[0,1)` boundary) — fixed with proper minimum-image reduction
+in both `solve.py` and the verifier's reference.
+
+**Result 2 (`5b017a4`): pass@2 2/2 solved AGAIN.** Both agents this round
+*also* got periodicity-awareness right, unprompted, explicitly reasoning
+in their own trajectories: "a component difference of (near) exactly 1
+does not distinguish two positions" — nearly verbatim the exact phrasing
+this handoff's author used internally to describe the insight, independently
+arrived at. Reviewer's convergence note: "the core insight is well within
+training-data knowledge for this class of computational crystallography
+task." No held-out fixture ever forced the specific floating-point boundary
+case in practice (constructing one reliably from real space-group fractions
+proved too fragile to engineer confidently in the time available), so this
+fix was never truly tested against a case that would fail a naive
+implementation — but even so, both agents implemented the periodicity-aware
+version anyway, unprompted, meaning a fixture wouldn't have been the
+deciding factor regardless.
+
+**What this second wall adds to the picture:** design 1's wall was one
+specific defeat mechanism (self-verifiability via differential testing)
+against one specific geometric crux. Design 2's wall is different in kind —
+it's not that the agent COULD verify correctness via testing, it's that the
+agent needed no verification step at all, on TWO independent
+crystallographic concepts in a row (Wyckoff-multiplicity reduction; periodic
+minimum-image coincidence). Both are textbook material (International
+Tables level for the first, basic PBC handling for the second) — exactly
+the kind of "well-represented in training data" concept the very first
+design (triclinic MIC alone, the ORIGINAL wall on this PR) also fell to.
+Three-for-three now: every mainstream crystallography/periodic-geometry
+concept-application crux tried on this PR has been within this model's
+reach, whether or not self-testing was needed to find it.
+
+## The decision this handoff exists to get (second time)
+
+**Option A — push once more, cheap, stochastic.** Same logic as before:
+pass@2 is stochastic, a trivial push could land a valid failure by chance.
+Weaker case this time than after design 1's first 2/2 (that design had
+ALSO shown 2 genuine valid failures elsewhere in its history; design 2 has
+shown zero — 0/4 trials failed across two independent pass@2 samples).
+
+**Option B — a THIRD design, this time genuinely obscure, not just
+"externally disclosed."** The lesson sharpens: disclosing data as input
+(rather than requiring recall) removes the recall burden but does NOT
+remove the "well-known training data" risk if the CONCEPT/ALGORITHM to
+apply to that data is itself mainstream. The winning formula elsewhere in
+this playbook (`dynamo-602128a` gemmlowp; `dynamo-3779991` RDFC-1.0) always
+paired disclosed *data* with an *obscure implementation convention that
+lives in one specific real codebase's internals*, not a generically-taught
+concept — e.g. gemmlowp's specific requantization shift-sign convention
+(not "quantization" the general topic), RDFC-1.0's specific
+deduplicate-triples-before-hashing step (not "canonicalization" the general
+topic). For Chemistry/materials workflows, this means looking further past
+"textbook crystallography with the data given" toward something like a
+specific numerical/format convention documented only in one real tool's
+source or one real file-format spec's edge-case handling — candidates not
+yet tried: partial-occupancy/split-site handling conventions in real CIF
+consumers (real, documented pitfall per web search during this round, not
+yet built into a task); ADP (anisotropic displacement parameter) tensor
+convention differences between SHELX and CIF-standard representations.
+Needs fresh design-from-scratch effort and, given two designs have now
+failed, may warrant discussing the category-fit question too (see Option C).
+
+**Option C — reconsider whether "Chemistry and materials workflows" is
+survivable against this model with the time/effort remaining**, and discuss
+with the user whether to keep trying within this exact subcategory or (per
+docs 40/41's category-mismatch tolerance, same option surfaced in
+`dynamo-0cfa37b`'s handoff for a different task) accept a small
+category/subcategory-fit risk for a design better suited to a different
+scientific-computing area. Not recommended over Option B without discussing
+first — two failed designs is not yet the four-plus seen before this
+question was raised on other tasks.
 
 ## What is NOT the problem (ruled out, don't re-litigate)
 
