@@ -1,30 +1,30 @@
 HANDOFF: dynamo-20141f7-scientific-computing-and-domain-science (PR #1)
 ========================================================================
-Last updated: after pass@2 returned 2/2 solved AGAIN on commit `5b017a4`
-(2026-08-25) — the second design's second consecutive "too easy" result,
-and the third "too easy" pass@2 verdict overall across two full designs on
-this PR.
+Last updated: after pass@2 returned 2/2 solved on commit `3e8d2d8`
+(2026-08-25) — the FOURTH consecutive "too easy" pass@2 verdict on this PR,
+across THREE structurally different designs, each targeting a different
+theorized defeat-resistance mechanism.
 
 -----------------------------------------------------------------------
-STATUS IN ONE SENTENCE: design 1 (periodic-geometry, compound triclinic +
-unwrapped-input crux) hit a self-testing-resistance wall after 2 genuine
-pass@2 valid failures + 3 QC rounds; the user chose to redesign (Option B
-from the prior version of this handoff); design 2 (site-multiplicity from
-disclosed real symmetry operations, purpose-built to resist self-testing
-via a measure-zero-event crux) hit a DIFFERENT wall twice in a row — both
-times the deciding crystallographic concept (Wyckoff-multiplicity dedup,
-then periodic minimum-image coincidence) turned out to be elementary,
-foundational training-data knowledge the model applies correctly without
-needing to derive or discover it at all. This is again a decision point,
-not a bug to fix — and it now looks less like "wrong specific fact" and
-more like "any concept-application crux in mainstream crystallography is
-within this model's reach," which should inform what's tried next.
+STATUS IN ONE SENTENCE: three designs, three different anti-self-testing
+strategies, four consecutive pass@2 2/2-solved results — the pattern has
+generalized past "wrong specific fact" or "wrong defeat mechanism" into
+something more fundamental: every crux tried so far has been a
+mathematically/physically DERIVABLE correct answer from a fairly-disclosed
+definition, and this model (Opus-4.8/Terminus-2) appears simply strong
+enough at first-principles derivation in this domain to bridge from
+disclosed definition to correct implementation directly, regardless of
+whether the computation is reversible (self-testable), discrete-with-a-
+measure-zero-deciding-case, or lossy/one-way. This is a decision point
+requiring the user's input on strategy — not a bug, and probably not
+fixable by a fourth variation on the same theme (derivable math from
+disclosed data) without changing what kind of fact/crux is being targeted.
 -----------------------------------------------------------------------
 
 ## Repo / PR pointers
 
 - Local clone: `C:\Users\chara\Downloads\Handshake\dynamo-20141f7-scientific-computing-and-domain-science`
-- Branch: `submission`, currently at commit `5b017a4` (nothing uncommitted)
+- Branch: `submission`, currently at commit `3e8d2d8` (nothing uncommitted)
 - PR: https://github.com/handshake-project-dynamo/dynamo-20141f7-scientific-computing-and-domain-science/pull/1
 - Category/subcategory (fixed, do not edit): Scientific Computing and Domain Science / Chemistry and materials workflows
   (first task in this exact subcategory — no prior in-category precedent existed to check against)
@@ -261,45 +261,130 @@ Three-for-three now: every mainstream crystallography/periodic-geometry
 concept-application crux tried on this PR has been within this model's
 reach, whether or not self-testing was needed to find it.
 
-## The decision this handoff exists to get (second time)
+## Design 3 (equiv-isotropic-adp): the user's Option B, and how it failed
+## differently again
 
-**Option A — push once more, cheap, stochastic.** Same logic as before:
-pass@2 is stochastic, a trivial push could land a valid failure by chance.
-Weaker case this time than after design 1's first 2/2 (that design had
-ALSO shown 2 genuine valid failures elsewhere in its history; design 2 has
-shown zero — 0/4 trials failed across two independent pass@2 samples).
+Per the user's explicit choice ("Option B") on the second version of this
+handoff, redesigned again — this time deliberately away from
+*concept-application* entirely, per the sharpened lesson: pair disclosed
+data with a *lossy, one-way* computation, so there's no reversible
+round-trip or brute-force differential test an agent's self-testing habit
+could construct. New crux (commit `3e8d2d8`): given an atom's anisotropic
+displacement tensor (Uij, standard crystallographic Debye-Waller/
+reciprocal-basis convention — disclosed via the exact exponent formula, the
+literal definition of the input data) and unit cell parameters, compute the
+equivalent isotropic displacement value (one third of the trace of the
+tensor in an orthonormal Cartesian frame). Six tensor components collapse
+into one scalar — genuinely lossy, no round-trip check possible. The naive
+"average the three diagonal terms" mistake is exact only for an orthogonal
+cell (measured: 0.00% error on the shipped cubic example) and 6-31% wrong
+on triclinic cells (three held-out fixtures, all genuinely triclinic).
+Deliberately did NOT name "Ueq" or state the metric-tensor formula in
+`instruction.md`, to avoid a directly searchable label — the formula was
+independently, rigorously verified before authoring (recovered a
+constructed known-isotropic test case exactly; this process caught a real
+bug in the second/verifier implementation, which had wrongly assumed a
+change-of-basis matrix was orthogonal).
 
-**Option B — a THIRD design, this time genuinely obscure, not just
-"externally disclosed."** The lesson sharpens: disclosing data as input
-(rather than requiring recall) removes the recall burden but does NOT
-remove the "well-known training data" risk if the CONCEPT/ALGORITHM to
-apply to that data is itself mainstream. The winning formula elsewhere in
-this playbook (`dynamo-602128a` gemmlowp; `dynamo-3779991` RDFC-1.0) always
-paired disclosed *data* with an *obscure implementation convention that
-lives in one specific real codebase's internals*, not a generically-taught
-concept — e.g. gemmlowp's specific requantization shift-sign convention
-(not "quantization" the general topic), RDFC-1.0's specific
-deduplicate-triples-before-hashing step (not "canonicalization" the general
-topic). For Chemistry/materials workflows, this means looking further past
-"textbook crystallography with the data given" toward something like a
-specific numerical/format convention documented only in one real tool's
-source or one real file-format spec's edge-case handling — candidates not
-yet tried: partial-occupancy/split-site handling conventions in real CIF
-consumers (real, documented pitfall per web search during this round, not
-yet built into a task); ADP (anisotropic displacement parameter) tensor
-convention differences between SHELX and CIF-standard representations.
-Needs fresh design-from-scratch effort and, given two designs have now
-failed, may warrant discussing the category-fit question too (see Option C).
+**Result: pass@2 2/2 solved AGAIN — the fourth consecutive "too easy"
+verdict on this PR.** But this time the mechanism is unambiguous and
+decisively confirmed by the reviewer's own trajectory analysis: **both
+agents independently DERIVED the correct metric-tensor formula from first
+principles**, purely from the disclosed Debye-Waller exponent convention —
+not recall of a named formula, not a lucky guess, genuine analytical
+derivation. Quoting the pass@2 analysis directly: "the convergence on an
+identical, non-obvious approach... strongly suggests the disclosed
+Debye-Waller formula in instruction.md contains enough information for a
+capable agent to derive the correct method from first principles — this is
+not merely training-data recall of a specific API, but analytical
+crystallographic reasoning." One trial explicitly verified its own derived
+formula against a self-constructed triclinic test case and confirmed
+agreement to `1.4e-17` — i.e., the agent used the SAME "verify with a
+constructed test case" methodology this handoff's author used during
+authoring, and it worked for the agent too, just via derivation-then-
+verification rather than derivation-alone. Even the read-only static rubric
+reviewer (a different, less capable pass) independently recognized the
+target quantity as "the standard Fischer-Tillmanns Ueq formula" purely from
+the instruction's precise-but-unnamed description — confirming the
+description was precise enough to be recognized/derived without needing
+the label.
 
-**Option C — reconsider whether "Chemistry and materials workflows" is
-survivable against this model with the time/effort remaining**, and discuss
-with the user whether to keep trying within this exact subcategory or (per
-docs 40/41's category-mismatch tolerance, same option surfaced in
-`dynamo-0cfa37b`'s handoff for a different task) accept a small
-category/subcategory-fit risk for a design better suited to a different
-scientific-computing area. Not recommended over Option B without discussing
-first — two failed designs is not yet the four-plus seen before this
-question was raised on other tasks.
+**Why this generalizes past "wrong specific mechanism":** three designs,
+three different theorized defeat-resistance properties (self-testable
+reversible geometry; self-testing-resistant discrete concept via a
+measure-zero deciding case; self-testing-resistant lossy one-way formula),
+four consecutive clean 2/2 results. The common thread isn't "which specific
+fact was too well-known" anymore — it's that EVERY crux tried has been a
+correct answer that is MATHEMATICALLY/PHYSICALLY NECESSARY given a
+fairly-disclosed definition, and this model is evidently strong enough at
+first-principles derivation in scientific-computing-adjacent domains to
+bridge from "precisely disclosed definition" to "correct implementation"
+directly, regardless of the specific obstacle placed in the way of
+*self-testing* a wrong answer. Self-testing-resistance was the wrong axis
+to optimize; the model doesn't need to self-test because it derives
+correctly the first time.
+
+This matches, and sharpens, the refined rule already in
+`dynamo_enumeration_defeats_evidence_inference` (memory): the winning
+cruxes elsewhere in this playbook (`dynamo-602128a` gemmlowp requantization
+shift-sign; `dynamo-3779991` RDFC-1.0 triple-deduplication-before-hashing)
+were never *mathematically derivable* facts — they were **arbitrary
+implementation choices** within one specific real system, unknowable from
+physical/logical first principles no matter how skilled the derivation,
+only from having read that system's actual source or spec. A metric-tensor
+transform, a group-orbit deduplication rule, a minimum-image geometry
+formula — all of these are the UNIQUE correct answer forced by a clean
+mathematical/physical definition, which is exactly the shape of problem
+this model is strongest at, independent of domain obscurity to humans.
+
+## The decision this handoff exists to get (third time)
+
+**Option A — a FOURTH design, this time an arbitrary convention, not a
+derivable formula.** Apply the sharpened rule directly: find a real,
+published fact within Chemistry/materials workflows that is an ARBITRARY
+CHOICE one specific system/spec made (not derivable from physics or math
+given clean definitions) — e.g., which of several equally-valid real
+conventions a specific real file format or specific real software commits
+to (analogous to gemmlowp's shift-sign, RDFC-1.0's specific step-ordering).
+Genuinely harder to find in this subcategory than it was in ML/GPU-kernel
+or RDF/graph domains, since most "chemistry facts" that are precisely
+disclosable are, definitionally, precisely computable too (that tension is
+now empirically demonstrated four times over on this PR). Candidates not
+yet evaluated against the sharpened bar: real CIF `_atom_site_occupancy`
+split-site/multi-species-per-site handling conventions (a real, documented
+pitfall, but need to verify the decisive rule is a genuine arbitrary
+convention and not itself derivable from "occupancy must sum to <= 1 per
+site" logic); specific numeric encoding quirks in a real, obscure
+crystallographic file format (not CIF itself, which is thoroughly
+documented/mainstream) that only one real parser's source clarifies.
+
+**Option B — reconsider category/subcategory fit now.** Four consecutive
+"too easy" results across three genuinely different mechanisms, all within
+one subcategory (first-ever task in "Chemistry and materials workflows"),
+is a materially stronger signal than after design 2's two failures. Worth
+discussing directly with the user whether this specific subcategory, for
+this specific benchmarked model, structurally favors clean/derivable
+science over arbitrary/obscure convention in a way that makes the winning
+formula unusually hard to find here — and whether continuing to search
+within this exact subcategory is the best use of further time versus
+accepting a small category-fit risk (per docs 40/41's tolerance for this,
+already precedented in `dynamo-0cfa37b`'s handoff) for a design in a
+sibling area more naturally suited to arbitrary-convention cruxes (e.g.
+Biology and bioinformatics' file-format ecosystem, or Data Querying and
+Databases' engine-specific behaviors, both of which have already produced
+confirmed wins elsewhere in this playbook).
+
+**Option C — accept a compute/scale-forcing axis after all.** The
+platform's own first automated suggestion (on the very first design) proposed
+this and it was set aside as likely hitting the same "well-known technique"
+wall and conflicting with the "difficulty from reasoning, not compute" golden
+rule. Given four straight derivation-based failures, an axis that forces
+genuine algorithmic engineering under real resource constraints (not just
+"bigger N", but requiring a qualitatively different data structure/algorithm
+the naive-but-correct approach can't finish in time) may deserve
+reconsideration as a legitimate *compounding* addition to a future design,
+not a replacement crux on its own — worth raising with the user rather than
+dismissing unilaterally a second time.
 
 ## What is NOT the problem (ruled out, don't re-litigate)
 
