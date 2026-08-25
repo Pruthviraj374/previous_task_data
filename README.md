@@ -43,3 +43,16 @@ Each file is named after its task (`dynamo-<hash>-<category-slug>-case-study.md`
   status, an orphaned helper holding a pipe) held; accepted at pass@5 0/5
 - [dynamo-20141f7 scientific-computing-and-domain-science](dynamo-20141f7-scientific-computing-and-domain-science.md) — Scientific Computing and Domain Science / Chemistry and materials workflows (first in subcategory); **GENUINE DEAD END, not accepted** — four designs (triclinic PBC geometry, self-testing-resistant symmetry-orbit dedup, self-testing-resistant lossy tensor formula) all fell to the same cause: this model derives mathematically-necessary answers from disclosed definitions regardless of self-testing resistance; sharpens the "real vs. obscure" rule into "derivable vs. arbitrary"; ten further candidates evaluated and rejected on paper
 - [dynamo-bb1a7f2 luxproof-group-render](dynamo-bb1a7f2-luxproof-group-render.md) — Games Puzzles and Interactive Simulation / Rendering graphics; a Pattern-D crux that's the only sensible way to extend an already-disclosed formula gets solved by analogy regardless of disclosure tuning (group-alpha-once, group-combine both fell 2/2 across five pass@2 rounds); the fix was a crux that changes what data gets read (GROUP KNOCKOUT, a real named PDF/Illustrator convention) rather than which formula applies; pass@5 landed at a stochastic 3/5 boundary twice for two different failure families before accepting at 1/5; AVA sample-output copy-bypass fix
+- [dynamo-24cd443 keepcase-restore](dynamo-24cd443-keepcase-restore.md) — File and Media Operations /
+  File permissions and metadata; successor to `restore-stillwater-volumes` and proof that shape has
+  aged: **a crux *family* can be saturated** — special bits, hardlink/symlink semantics,
+  directory-mode deferral and chmod-follows-symlink were each applied *correctly* by the model, so
+  four consecutive designs died 2/2 and three pushes were wasted strengthening a family it had
+  already mastered; the escape was an adjacent family in the same subcategory (extended attributes,
+  where a `user.*` xattr needs write permission the recorded `0o444` removes, so xattrs must precede
+  the chmod) chosen specifically because the `try/except` reflex that had rescued the two previous
+  attempts still fails there; also **a crux built from a web summary of `os.link(follow_symlinks=True)`
+  was false on Linux** and was caught only because its own mutant scored 1.0 — verify OS behaviour in
+  the target image, never from docs; final AVA block fixed by making the verifier stricter rather than
+  the instruction looser, because pass@2 had just started passing and every push re-rolls it; accepted
+  at pass@5 2/5
