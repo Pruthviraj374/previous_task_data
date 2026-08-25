@@ -1,230 +1,179 @@
-# dynamo/equiv-isotropic-adp — four designs, four confirmations of one wall
+# dynamo/sdf-registration-qc — three derivable cruxes died, one arbitrary convention won
 
 | | |
 |---|---|
-| **Outcome** | **GENUINE DEAD END, not accepted** — best-quality design left open on the PR; task reassignment/further budget is the user's call, not made here |
+| **Outcome** | **ACCEPTED** — every gate green, `accepted` label |
 | **Repo** | `dynamo-20141f7-scientific-computing-and-domain-science`, branch `submission`, fork `charan-sr` |
-| **PR** | https://github.com/handshake-project-dynamo/dynamo-20141f7-scientific-computing-and-domain-science/pull/1 (left open, at commit `3e8d2d8`) |
+| **PR** | https://github.com/handshake-project-dynamo/dynamo-20141f7-scientific-computing-and-domain-science/pull/1 |
 | **Category / sub** | Scientific Computing and Domain Science / Chemistry and materials workflows (pre-seeded; first-ever task in this exact subcategory) |
-| **Benchmarked model** | `task.toml` names Opus-4.8 / Terminus-2 |
-| **Final commit** | `3e8d2d8` (design 3, `equiv-isotropic-adp`); ~10 more candidates evaluated on paper afterward, none built |
-| **Headline** | **Four consecutive `pass@2` 2/2-solved verdicts across three structurally different design mechanisms**, converging on one finding: this model derives mathematically/physically *necessary* correct answers from precisely disclosed definitions extremely reliably, regardless of what obstacle stands between an agent and self-testing a wrong answer. The winning-elsewhere formula (real external standard + genuinely arbitrary, non-derivable implementation convention) could not be replicated in this subcategory within the effort invested. |
+| **Final commit** | `520de06` (design 4, `sdf-registration-qc`) |
+| **Headline** | **pass@2 = 0/2 (both valid fails), pass@5 = 1/5, avg@5 = 0.200, 4 good valid fails.** Reached on the **fourth** full design, after the first three each cleared rubric review and were then solved 2/2 by `pass@2` — **four consecutive too-easy verdicts**. `qc_gate` passed **first try** on design 4, versus three QC rounds and four bug fixes on design 1. |
 
-This is the first genuine, fully-documented non-acceptance in this playbook. It is included
-anyway, in full, because the negative result is the valuable part: four different, carefully
-reasoned hypotheses about *why* a design would resist this model each failed the same way, and
-the reasoning behind each failure is a real constraint on what "Scientific Computing and
-Domain Science" tasks can look like against this model/agent pairing.
+This is the most instructive task in the corpus so far, because it accidentally ran a
+controlled experiment. Four designs, same category, same subcategory, same author, same
+benchmarked model, same verification discipline — three failed and one succeeded, and the
+variable that changed was not obscurity, not self-testing resistance, and not the number of
+cruxes. It was **whether the deciding fact is derivable.**
 
 ---
 
-## 1. Design 1 — periodic coordination numbers (triclinic PBC)
+## 1. The four designs
 
-**Crux:** compute each atom's coordination number under general (possibly triclinic) periodic
-boundary conditions. The naive shortcut — round each fractional displacement component
-independently to the nearest integer to find the "nearest" periodic image — is exact only for
-orthogonal cells; genuinely skewed cells need full multi-image enumeration. Real, documented
-(GROMACS/LAMMPS/MDAnalysis all warn about this), not invented.
+| # | Design | Crux | Result |
+|---|---|---|---|
+| 1 | `periodic-coordination-numbers` | triclinic minimum-image geometry; later compounded with unwrapped-input reduction | 2/2 solved → **1/2 valid fail ×2** → 2/2 solved |
+| 2 | `site-multiplicity` | symmetry-orbit deduplication (atoms on special positions) | 2/2 solved, twice |
+| 3 | `equiv-isotropic-adp` | metric-tensor unfolding of an anisotropic displacement tensor | 2/2 solved |
+| 4 | `sdf-registration-qc` | **arbitrary MDL/CTfile V2000 encoding conventions** | **0/2, then pass@5 1/5 — ACCEPTED** |
 
-**Result: `pass@2` 2/2 solved, first push.** Reviewer's analysis: both agents independently
-derived the standard inverse-lattice column-norm image-search bound, calling it "well-represented
-in training data... rather than independently derived from first principles."
+### Design 1 — periodic coordination numbers
+Naive per-axis fractional rounding finds the wrong nearest periodic image once a cell is
+genuinely skewed. Real, documented in GROMACS/LAMMPS/MDAnalysis. Solved 2/2: both agents
+independently derived the standard inverse-lattice column-norm bound, which the reviewer
+called *"well-represented in training data."* Compounding it with an unwrapped-input
+robustness axis produced two genuine 1/2 valid failures and survived three QC rounds — then
+a third sample came back 2/2, with one agent **catching its own bug by writing a randomized
+brute-force self-test.** Reversible geometry is self-testable; that was the diagnosis.
 
-**Redesign within design 1 — compounded with unwrapped-input robustness.** Added a second,
-independent pitfall: `instruction.md` already disclosed positions might not be pre-wrapped into
-the cell (realistic — unwrapped trajectory dumps for diffusion tracking are real MD output); a
-full triclinic-correct search still fails if centered on the raw, un-reduced displacement.
-**This got a genuine pass@2 1/2 valid failure — twice in a row**, across three rounds of
-legitimate QC (mutation-testing) hardening (a real floating-point round-trip bug the fix itself
-introduced; an untested cutoff-boundary convention; an over-broad import denylist; a missing
-symlink guard; a real robustness bug where extremely skewed-but-valid cells blew the image-search
-bound up to 42/11/3 repeats, fixed with lattice basis reduction; a missing coverage case for
-self-image exclusion on small cells).
+### Design 2 — site multiplicity
+Purpose-built to defeat self-testing: the deciding case (an atom exactly on a symmetry
+element) is a measure-zero event a random self-test will never hit. The anti-self-testing
+property held — and it didn't matter. Both agents wrote correct deduplication *from the
+start*, no debugging needed. Reviewer: *"established training-data knowledge of
+crystallographic multiplicity algorithms."* Nothing needed discovering, so the defense never
+engaged. A second attempt after tightening disclosure also came back 2/2, with both agents
+deriving periodicity-awareness unprompted.
 
-**Then, on a third `pass@2` sample: 2/2 solved again — the load-bearing result for this whole
-task.** Both agents built fully *general, correct* algorithms (a Cauchy-bound via the inverse
-metric tensor; a QR-decomposition sphere decoder). One agent started with the naive shortcut,
-**caught its own mistake by writing a randomized skewed-lattice test and comparing against a
-brute force it built itself**, then fixed it. This is a structurally different defeat mechanism
-from simple recall: an agent doesn't need to already know the right approach if it adopts
-differential-testing against its own brute force as a general habit — and periodic-image
-geometry is fully self-testable that way (any reversible, first-principles-computable transform
-is). Abandoned after this; user chose to redesign rather than keep re-rolling a design with a
-33% empirical per-trial failure rate against `pass@5`'s 60% bar.
+### Design 3 — equivalent isotropic ADP
+Purpose-built against the *other* mechanism: a **lossy, one-way** computation (six tensor
+components collapse to one scalar), so no round-trip or differential self-check exists.
+Solved 2/2 anyway — and this trial gave the decisive evidence. Both agents **derived the
+metric-tensor formula from first principles** off the disclosed Debye-Waller convention.
+Reviewer, verbatim: *"analytical crystallographic reasoning, not merely training-data
+recall."* One trial verified its own derivation against a self-constructed triclinic case to
+`1.4e-17` — the same methodology used to author the task.
 
-## 2. Design 2 — site multiplicity via symmetry-operation deduplication
+At this point ten further candidates were evaluated on paper and rejected, and the task was
+written up as a dead end. The user then asked for one more attempt.
 
-**Crux, chosen specifically to resist design 1's defeat mechanism:** given an atom's fractional
-coordinates and a *fully disclosed* list of real symmetry operations (rotation + translation,
-taken from real published space groups — P-1, P2₁/c, C2/c, P2₁2₁2₁, verified against the
-International Tables for Crystallography before use), compute the atom's site multiplicity (the
-number of distinct positions the operations generate). All data disclosed — no external-lookup
-burden. An atom on a symmetry element (inversion center, rotation axis) generates *fewer*
-distinct positions than the operation count, but "apply every operation, don't deduplicate" is
-natural and *correct* for any generic-position atom — a measure-zero event for an agent's own
-self-chosen test coordinates. **No round-trip or brute-force differential test validates
-deduplication correctness the way it does for reversible geometry** — this was the intended
-escape from design 1's wall.
+### Design 4 — SDF registration QC (accepted)
+Summarise MDL V2000 SDF records for compound registration: net formal charge, radical
+centres, isotope-resolved formula. Four decisive conventions, all real CTfile V2000, **none
+derivable**:
 
-**Result: `pass@2` 2/2 solved, first push.** Both agents wrote correct deduplication *from the
-start*, no debugging or self-testing needed at all. Reviewer's diagnosis: "established
-training-data knowledge of crystallographic multiplicity algorithms" — the *concept* itself
-(Wyckoff-multiplicity reduction) is elementary, foundational crystallography this model applies
-by default, so the measure-zero-event defense never mattered; nothing needed discovering.
+| Convention | Naive reading | Correct reading |
+|---|---|---|
+| Atom-block charge field | the stored integer *is* the charge | a **code**: `1`→+3, `2`→+2, `3`→+1, `4`→radical, `5`→−1, `6`→−2, `7`→−3 |
+| `M  CHG` property line | layered on top of atom-block charges | **supersedes** the atom block entirely; unlisted atoms forced neutral |
+| Charge code `4` | a charge, or ignored | a **doublet radical** — a radical centre, no charge |
+| Atom-block mass-difference | an absolute mass number | an **offset** from the principal isotope (`M  ISO` is absolute) |
 
-**Fix attempted:** the platform's own pass@2 suggestion pinpointed real over-disclosure —
-`instruction.md`'s coincidence rule spelled out the exact comparison procedure verbatim. Reworded
-to state the goal (count distinct positions, understood periodically) rather than the mechanism;
-this also surfaced and fixed a genuine latent bug (naive per-component coincidence comparison
-isn't periodicity-aware — fractional coordinates are points on a 3-torus).
+**You cannot reason your way to "`1` means +3."** It is a committee decision that could
+equally have gone the other way, and in other formats it did.
 
-**Result: `pass@2` 2/2 solved again.** Both agents *also* derived periodicity-awareness
-unprompted this round, one trajectory reasoning almost verbatim: "a component difference of
-(near) exactly 1 does not distinguish two positions." Second confirmation that disclosing data
-doesn't remove the "well-known concept" risk if the *concept* applied to that data is itself
-mainstream.
+---
 
-## 3. Design 3 — equivalent isotropic ADP from a lossy, one-way formula
+## 2. The proof that it is underivable
 
-**Crux, chosen to resist design 2's defeat mechanism:** given an atom's anisotropic
-displacement tensor (Uij, standard crystallographic Debye-Waller/reciprocal-basis convention —
-disclosed via the exact exponent formula, the literal definition of the input data) and unit
-cell parameters, compute the equivalent isotropic displacement value (one third of the trace of
-the tensor in an orthonormal Cartesian frame). Six tensor components collapse into one scalar —
-genuinely **lossy and one-way**, so there is no round-trip check an agent's self-testing habit
-could construct, unlike design 1's reversible geometry. Deliberately avoided naming "Ueq" or
-stating the metric-tensor formula in `instruction.md`, to avoid a directly searchable label.
-Formula rigorously verified before authoring — not just cross-checked between two
-implementations, but validated against a constructed known-isotropic test case on a genuinely
-triclinic cell (this process caught a real bug in the second implementation, which had wrongly
-assumed a change-of-basis matrix was orthogonal).
+This is the single most valuable artifact this task produced. In `pass@2`, one agent wrote a
+complete, competent implementation containing an **invented, shifted charge-code table**:
+codes `4` *and* `5` both treated as radical, codes `6`–`8` mapped to −1/−2/−3 instead of the
+correct `5`–`7`. It also omitted `M CHG` supersession entirely.
 
-**Result: `pass@2` 2/2 solved — the fourth consecutive "too easy" verdict, and decisive.** The
-reviewer's trajectory analysis leaves no ambiguity: both agents **independently derived the
-correct metric-tensor formula from first principles**, purely from the disclosed Debye-Waller
-exponent convention. Quoted directly: "the convergence on an identical, non-obvious approach...
-strongly suggests the disclosed Debye-Waller formula in instruction.md contains enough
-information for a capable agent to derive the correct method from first principles — this is
-not merely training-data recall of a specific API, but analytical crystallographic reasoning."
-One trial explicitly verified its own derived formula against a self-constructed triclinic test
-case (agreement to `1.4e-17`) — the same "verify against a constructed test case" methodology
-used to author the task, just applied by the agent instead. Even the read-only static rubric
-reviewer independently recognized the target quantity as "the standard Fischer-Tillmanns Ueq
-formula" purely from the precise-but-unnamed description.
+That is what "underivable" looks like in practice. The agent could not derive the table, so
+it *guessed a plausible-looking one* — and a plausible guess is wrong, because the real table
+is arbitrary. Contrast design 3, where two independent agents derived the same correct
+formula because only one formula is mathematically possible.
 
-## 4. The generalized finding
+`pass@5` sharpened it further: **all four failing trials shared one primary root cause — the
+`M CHG` supersession rule.** Agents that recalled the charge-code table still lost on the
+precedence rule between the atom block and the properties block, which is a second,
+independent arbitrary decision.
 
-Three designs, three different theorized defeat-resistance properties — self-testable reversible
-geometry; self-testing-resistant discrete concept via a measure-zero deciding case; self-testing-
-resistant lossy one-way formula — four consecutive clean 2/2 results. The common thread isn't
-"which specific fact was too well-known" anymore. **Every crux tried has been a correct answer
-that is mathematically/physically necessary given a fairly-disclosed definition**, and this
-model is evidently strong enough at first-principles derivation in scientific-computing-adjacent
-domains to bridge from "precisely disclosed definition" to "correct implementation" directly,
-regardless of what obstacle is placed in the way of *self-testing* a wrong answer.
-Self-testing-resistance was the wrong axis to optimize across all three redesigns; the model
-doesn't need to self-test because it derives correctly the first time.
+---
 
-This sharpens the existing `dynamo_enumeration_defeats_evidence_inference` rule (memory) rather
-than contradicting it. The confirmed wins elsewhere in this playbook were never *mathematically
-derivable* facts:
+## 3. The rule this establishes
 
-- `dynamo-602128a` (gemmlowp/TFLite requantization): the correct rounding/shift-sign direction
-  for fixed-point requantization is an **engineering decision baked into one specific codebase**,
-  not derivable from quantization theory — multiple mathematically valid rounding conventions
-  exist, and only reading (or having memorized) that source tells you which one gemmlowp uses.
-- `dynamo-3779991` (RDFC-1.0 canonicalization): "deduplicate triples before hashing" is one
-  specific step, easy to miss, buried inside a large, genuinely complex, multi-step real
-  standard — the overall shape is derivable/recognizable, but this one fine-grained branch
-  requires having read the actual formal specification, not just understanding the general
-  concept of "canonicalize a graph."
+> **Obscurity to humans is not the filter. Derivability is.**
+>
+> Before building, ask: *given the exact input schema I am about to disclose, could a
+> competent domain expert derive the unique correct output purely by reasoning, with no
+> external fact to recall?* If **yes**, expect a clean 2/2 solve — no matter how obscure the
+> topic feels, and regardless of whether the computation is reversible, discrete, or lossy.
+> If **no** — the value could only be otherwise, and one specific real system happened to
+> choose it this way — the crux may survive.
 
-A metric-tensor transform, a group-orbit deduplication rule, a minimum-image geometry formula —
-all of these are the *unique correct answer* forced by a clean mathematical/physical definition,
-which is exactly the shape of problem this model is strongest at, independent of how obscure
-that fact is to a human practitioner who's never had to derive it by hand.
+Corollaries confirmed here:
 
-## 5. Ten further candidates evaluated on paper, none built
+- **Self-testing-resistance is necessary for some mechanisms but never sufficient.** It only
+  matters for a crux the agent would otherwise get *wrong and need to catch*. If the agent
+  derives correctly on the first attempt, the defense never engages. Designs 2 and 3 were
+  both engineered around this and both failed.
+- **Disclosing data removes the recall burden, not the derivability risk.** Design 2
+  disclosed the full symmetry-operation list; the *concept* applied to that data was still
+  mainstream, so it was solved anyway.
+- **Volume of cruxes does not help.** Consistent with `dynamo-0cfa37b`: adding mechanisms
+  satisfies the rubric's breadth concern while leaving `pass@2` untouched, because this model
+  transcribes any number of fully-specified rules.
+- **Chemistry/materials is a hostile subcategory for this** — precisely-disclosable physical
+  facts are, almost by construction, precisely computable. The winning crux was not chemistry
+  at all; it was a *file-format committee decision that chemistry software happens to
+  implement*.
 
-After the third failure, six candidates were evaluated against the sharpened bar (real, but
-*arbitrary* — not derivable) before concluding none was both tractable and clearly different:
-CIF disorder-group/split-site occupancy handling (collapses back into design 2's already-defeated
-multiplicity mechanism); bond valence sum with disclosed empirical R0/B parameters (the hard part
-— periodic neighbor-finding — is design 1's already-defeated mechanism, empirical constants are
-just data to plug in); pymatgen/spglib symmetry-tolerance discrepancy (real, but building a task
-around it requires open-ended full symmetry-detection, risking a `solvable` FAIL); space-group
-origin-choice/cell-setting ambiguity (only matters when converting between settings — no
-ambiguity survives if all data is given in one consistent convention throughout); PDB hybrid-36
-numeric-overflow encoding (real and arbitrary, but reads as a data-encoding puzzle rather than
-domain-expert reasoning, risking an `essential_difficulty` FAIL for "clerical detail"); and
-mixed-valence oxidation-state disambiguation via trying each candidate R0 (rejected as a repeat
-instance of the *enumeration*-defeats-evidence pattern from a different task's BPE tie-break
-work, not a new escape).
+---
 
-A seventh direction — Option C, compute/scale-forcing — was evaluated in more depth: reviving
-design 1's verified triclinic-geometry code with the crux reframed entirely around performance
-(large atom counts under a tight memory/time budget, forcing a skew-aware cell list, since naive
-3×3×3-neighbor-bucket cell lists are documented to be wrong for sufficiently skewed cells — real,
-per LAMMPS's own hard tilt-factor limit). Declined without building: a memory-only constraint has
-an easy escape hatch (chunked/blocked brute force, a completely standard numpy pattern, defeats
-the intended forcing function without real algorithmic insight); a genuinely time-binding
-constraint needs tens of thousands of atoms to reliably exceed a real timeout even well
-vectorized, straining "realistic structure" framing; and most fundamentally, nothing in this
-task's history gave a reason to expect "implement a skew-aware cell list" — itself a well-posed,
-comparably derivable engineering problem — would escape the same pattern the other four attempts
-all fell to.
+## 4. Verification discipline that paid off
 
-## 6. Reusable checklist for the next Scientific Computing / Domain Science attempt
+Everything below was done **before** the first push of design 4, and each step caught a real
+problem:
 
-- **Disclosed data removes the recall burden, not the derivability risk.** If the CONCEPT or
-  FORMULA connecting the disclosed data to the answer is itself clean and mathematically/
-  physically forced, this model derives it — whether or not self-testing could also have found
-  it. Test every candidate crux against: "given the exact input schema I'm about to disclose,
-  could a strong physicist/mathematician derive the unique correct output purely by reasoning
-  from first principles, with no external fact to recall?" If yes, expect a clean 2/2 solve.
-- **The only confirmed-working shape is: a real, published, external standard or system, where
-  the DECIDING detail is an arbitrary implementation choice (not a mathematical necessity) that
-  lives in that system's actual source/spec, not in general domain understanding.** Verify this
-  by asking: "if I fully and correctly explained the general concept to a domain expert with no
-  access to this specific system, could they derive the deciding value themselves?" If yes
-  (as in Ueq, Wyckoff multiplicity, triclinic MIC), it's derivable and will not survive. If no —
-  the value could only be otherwise, and only this one system happened to choose it this way —
-  it may survive.
-- **Self-testing-resistance (measure-zero deciding cases, lossy/one-way computations) is a
-  necessary property for SOME defeat mechanisms but is not sufficient on its own** — it only
-  matters for cruxes an agent would otherwise get wrong and need to catch via testing. If the
-  agent derives the right answer on the first attempt (which this model does very reliably for
-  clean scientific-computing problems), self-testing-resistance never gets exercised.
-- **Chemistry/materials-workflows-adjacent facts are unusually likely to be "clean and
-  derivable"** compared to file-format/database/ML-serving domains, because precisely-disclosable
-  physical/geometric facts are, almost by construction, precisely computable too. Sibling
-  categories with confirmed wins (Data Querying and Databases' engine-specific behaviors, the
-  gemmlowp GPU-kernels precedent) may structurally favor the winning shape more than this
-  subcategory does.
-- **QC (mutation testing) is trustworthy and worth taking seriously even mid-crisis** — every
-  finding across three QC rounds on design 1 was a real, legitimate bug or coverage gap, several
-  caught genuine authoring mistakes (a floating-point round-trip bug, a robustness gap under
-  extreme cell skew, an incorrect orthogonality assumption in an "independent" verification).
-  Reproduce truncated/terse QC evidence by hand locally before trusting it at face value.
-- **Formula-heavy designs need independent numerical verification before authoring fixtures**,
-  not just cross-checking two code paths that implement the same idea differently — construct a
-  case with an independently-known correct answer (e.g. a known-isotropic tensor) and confirm the
-  candidate formula recovers it, the way this task's Ueq formula was validated.
+- **Verify the external fact against the spec, don't recall it.** Both decisive facts (the
+  code table, the supersession rule) were confirmed against the published CTfile
+  specification via search before any code was written.
+- **Verify the *discriminating property*, not just correctness.** Built all four naive
+  mutants and checked each against every fixture. This caught two authoring bugs: the
+  supersede fixture originally used charges of `+1` and `−1` that **cancelled at net +1**,
+  hiding the divergence completely, and a sort key crashed on `None` isotopes.
+- **Verify sample inertness explicitly.** All four mutants must reproduce the shipped sample
+  exactly; all four must fail their own held-out fixture. Confirmed through the real Harbor
+  verifier, not just standalone scripts: oracle 1.0, nop 0.0, four mutants 0.0 each.
 
-## 7. Distilled summary
+That discipline is very likely why `qc_gate` passed **first try** here, against three rounds
+and four legitimate bug findings on design 1.
 
-Four designs against Opus-4.8/Terminus-2 in Scientific Computing and Domain Science / Chemistry
-and materials workflows, each targeting a different theorized weakness (well-known formula →
-self-testing-resistant discrete concept → self-testing-resistant lossy formula), all converged
-on the same underlying cause: this model reliably derives the unique, mathematically-necessary
-correct answer from any precisely-disclosed definition, so no obstacle placed in the way of
-*self-testing a wrong answer* matters if the agent never produces a wrong answer to begin with.
-The confirmed-working formula elsewhere in this playbook — a real external standard's genuinely
-arbitrary implementation choice, not derivable from first principles no matter the skill — could
-not be replicated within this subcategory in the effort invested; every real, tractable candidate
-considered either collapsed back into an already-defeated derivable mechanism or risked a
-different, already-documented failure mode. Left as a genuine, fully-documented dead end rather
-than force a fifth low-confidence build; the reusable lesson (test candidate cruxes against "could
-a domain expert derive this from the general concept alone, with no access to the specific
-system?") is the main asset this task produced for future attempts in this or adjacent
-subcategories.
+---
+
+## 5. Reusable checklist
+
+- Run the derivability test above on every candidate crux **before** building.
+- Prefer a real system's *arbitrary encoding/precedence decision* over any *formula*,
+  *algorithm*, or *physical relationship*, however specialised the latter feels.
+- Name the standard as a locator; restate none of its rules. Design 4's `instruction.md`
+  says the input is MDL V2000 and never mentions a charge code.
+- Construct the shipped sample so every governed field is **inert** — here, all samples use
+  modern property-line encoding, so every atom-block field the conventions govern is zero.
+- Give each axis its own held-out fixture, and pick values so correct and naive readings
+  **cannot coincidentally coincide** (the cancelling-charges bug).
+- Build every naive mutant and run it through the *real* verifier before pushing.
+- Two arbitrary axes beat one: agents that recalled the charge table still lost on
+  supersession.
+
+---
+
+## 6. Distilled summary
+
+Four designs against Opus-4.8/Terminus-2 in Chemistry and materials workflows. The first
+three — triclinic minimum-image geometry, symmetry-orbit deduplication, and metric-tensor
+ADP conversion — each cleared rubric review and were then solved 2/2 by `pass@2`, four times
+running, because each crux was the *unique answer forced by a disclosed definition*, and this
+model derives those reliably; the anti-self-testing mechanisms built into designs 2 and 3
+defended against a wrong answer that was never produced. The fourth design kept the same
+domain but changed the kind of fact: four **arbitrary MDL/CTfile V2000 encoding conventions**
+(a charge *code* table, property-block supersession, a radical code, and an isotope offset)
+that cannot be derived from chemistry at all — only read from the specification. It returned
+`pass@2` 0/2 and `pass@5` 1/5 (avg@5 0.200, four good valid fails, all four sharing the
+`M CHG` supersession trap) and was accepted, with `qc_gate` clean on the first attempt. The
+transferable lesson is that **derivability, not obscurity, is what decides whether a crux
+survives**: if a competent expert could derive the deciding value from the disclosed inputs
+with no external fact to recall, it will not stump this model — and the cleanest proof is
+that an agent, unable to derive the table, invented a shifted one instead.
