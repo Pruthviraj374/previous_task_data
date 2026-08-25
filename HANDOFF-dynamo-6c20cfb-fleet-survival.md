@@ -61,3 +61,61 @@ untouched. Ship the self-check for a NON-GRADED extract instead (merge-lora 4.1)
 4. Do NOT respond by stacking more risk-set axes. motion-register 3(f): adding held-out
    coverage of an axis you already have does nothing; you need a second axis of a
    different KIND.
+
+---
+
+## Measurement log — four pass@2 rounds, three solved
+
+| Commit | What changed on the agent-visible surface | pass@2 |
+|---|---|---|
+| `3f9f9d4` | 5 axes, all "which formula/boundary applies" | **2 solved** |
+| `4cf7aaf` | + `spans_are_units` (risk set over units, not spans) | **0 solved, 2 valid-fail** |
+| `633bf86` | **nothing** — held-out fixture, tools and docs only | **2 solved** |
+| `7b3715b` | + `rows_are_events` (one failure, many collectors reporting) | **2 solved** |
+
+### The finding that matters: 4cf7aaf vs 633bf86
+
+`instruction.md` and `environment/` are **byte-identical** between those two commits
+(verified with `git diff`). Same task, 0-solved then 2-solved. So the one green pass@2 in
+this whole sequence was a ~50% coin flip, not evidence the axis worked. Do not read a
+single pass@2 as a verdict on a single axis — `rebuild-readout-builder` §3.1 said this and
+it reproduced here exactly.
+
+### What is now measured as inside this model's prior
+
+Everything expressible as **"which rows go into `n` or `d`"**:
+delayed entry, the `entry < t <= exit` boundary, withdrawal ties, step side at a reported
+age, risk sets over units rather than spans, and event counts over units rather than rows.
+The last two were chosen specifically because no survival text discusses them as
+data-quality cases — and the model still got them, because the *default* lands in the
+right place regardless of whether a textbook names the case.
+
+The pass@2 suggestion diagnosed this before I did:
+
+> these axes are all *standard* Kaplan-Meier conventions, and `instruction.md` names the
+> estimator ... A domain-knowledgeable agent recalls the correct default for each axis
+> without needing to reason from the archive description.
+
+**Rule to carry forward:** "no textbook discusses this case" is NOT the same as "the
+textbook default is wrong here". Only the second one stumps. Ask of any candidate axis:
+*what would a competent solver do by default, and is that answer wrong?* If the default is
+right, the axis is free difficulty for the model, not for you.
+
+### Two levers still untried on this task
+
+1. **Stop naming the estimator.** The suggestion's own next-best lever: describe the
+   required behaviour without "Kaplan-Meier" / "Greenwood", so the method has to be derived
+   from the archive rather than pattern-matched from a label. Risk: ambiguity / `qc_gate`
+   B5, since the arithmetic then has to be pinned by description alone.
+2. **Remove the graded extract's answer.** `/app/data/expected.json` is still shipped for
+   the graded extract. In round 1 a trial used it to catch and fix a real RMST bug mid-run.
+   `sweep-replay` §5.1 measured removing it as worth 2/5 -> 0/5 with the crux untouched.
+   Ship a reference for a separate ungraded extract instead (`merge-lora` §4.1).
+
+### Honest status
+
+Three of four pass@2 rounds solved. Every non-difficulty gate is green and the machinery is
+sound, so the cost of another attempt is one pass@2 slot, not a rebuild. But if levers 1
+and 2 also fail, this is the `dynamo-20141f7` shape: a subcategory where the model derives
+the answer from any well-specified description, and the honest call is to say so rather
+than keep spending slots.
