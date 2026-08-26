@@ -75,3 +75,15 @@ Each file is named after its task (`dynamo-<hash>-<category-slug>-case-study.md`
   records exist at all, with the named estimator left as breadth the model handles correctly.
   Also records a **byte-identical agent surface returning 0-solved then 2-solved**, and three of
   six pushes lost to avoidable rubric defects rather than difficulty; accepted at pass@5 1/5
+- [dynamo-03da6c3 collate-modpool-batches](dynamo-03da6c3-collate-modpool-batches.md) —
+  Mathematics and Formal Reasoning / **Number theory and exact arithmetic** (first in this
+  category); accepted in **two pushes** by applying the derivability rule *prospectively* —
+  the CRT and rational-reconstruction maths is stated in full and 5/5 trials got it right,
+  while the crux sits in the archives being **Erlang external terms** whose encoding changes
+  with a value's width and contents. Establishes that **needing a spec is not reading a
+  spec**: agents stop reading once the shipped sample parses, so big public binary formats
+  are a renewable crux source. Records the sixth inverted axis ranking — and the first
+  caused by the author's **own mutant battery**, because a harmless variant scored 1.0 and
+  the *branch-missing* mutant was never built. `qc_gate` clean first try; the only defect in
+  push 1 was the `You have N seconds…` line, a rubric FAIL that `00-ATTEMPTER-SPEC.md` still
+  claims is mandatory; accepted at pass@5 2/5
