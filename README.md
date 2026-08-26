@@ -64,3 +64,14 @@ Each file is named after its task (`dynamo-<hash>-<category-slug>-case-study.md`
   fifth axis** and took down a trial that had solved everything else — the first gate-driven axis in this
   corpus to actually gate; axis ranking measured wrong three times on one design; accepted in two pushes at
   pass@5 0/5, avg@5 0.000, rubric 31/31 both pushes
+- [dynamo-6c20cfb replay-fleet-survival](dynamo-6c20cfb-replay-fleet-survival.md) — Data Science
+  and Reporting / **Statistical analysis and inference** (first in subcategory); **the crux must
+  not live in the statistics** — four consecutive pass@2 rounds measured this model recovering
+  every survival-analysis convention unaided, including two axes chosen precisely because no
+  textbook discusses them, because the textbook *default* is correct either way; the filter is
+  **default-right vs default-wrong**, not obscure vs known. Accepted only once the extract became
+  a real **dBase III+ table** whose format rules (deleted records keep their bytes and only flip a
+  status byte; the header's record count is authoritative over trailing slack) decide which
+  records exist at all, with the named estimator left as breadth the model handles correctly.
+  Also records a **byte-identical agent surface returning 0-solved then 2-solved**, and three of
+  six pushes lost to avoidable rubric defects rather than difficulty; accepted at pass@5 1/5
