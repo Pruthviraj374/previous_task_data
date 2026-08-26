@@ -100,3 +100,4 @@ Each file is named after its task (`dynamo-<hash>-<category-slug>-case-study.md`
   synthetic stage-3 fixtures, self-validated, and the bug stayed invisible** — the no-self-check
   amplifier surviving the agent's own checker; built through a critical Actions outage at zero cost
   by changing nothing; accepted at pass@5 1/5, avg@5 0.200, rubric 31/31 both pushes
+- [dynamo-32fad5e replay-panel-capture](dynamo-32fad5e-replay-panel-capture.md) — Hardware, Embedded, and Low-Level Systems / Embedded and firmware; **recalled = solved, twice** (HD44780 pass@2 2/2, SSD1306 addressing-only pass@5 4/5) — a display controller's addressing is the model's headline knowledge; difficulty finally came from **state-management breadth** (6 independent sample-inert axes, all-or-nothing), accepted at pass@5 2/5
