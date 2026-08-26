@@ -87,3 +87,16 @@ Each file is named after its task (`dynamo-<hash>-<category-slug>-case-study.md`
   the *branch-missing* mutant was never built. `qc_gate` clean first try; the only defect in
   push 1 was the `You have N seconds…` line, a rubric FAIL that `00-ATTEMPTER-SPEC.md` still
   claims is mandatory; accepted at pass@5 2/5
+- [dynamo-f4b9eeb consolidate-zero-checkpoints](dynamo-f4b9eeb-consolidate-zero-checkpoints.md) — Model
+  Training and ML Infrastructure / **Checkpointing and resumption**; DeepSpeed's two ZeRO gathers
+  (stage 1/2 slices a whole flattened parameter *group* per rank, stage 3 slices every *parameter*
+  per rank with its own padding) with a shipped stage-2 checkpoint in the one configuration where all
+  thirteen wrong readings reproduce it element for element; **transcribing a real binary container
+  (pickle → JSON + flat `.bin`) keeps the authority and drops the torch dependency**; the single
+  blocking gate was `qc_gate` C3 on an **unreachable branch** — bf16 appeared only on module records
+  the correct answer never reads — fixed by making the branch *live* (a bf16 job casts its buffers
+  too, which is why DeepSpeed widens them with `.float()`) rather than deleting it, and proved by
+  applying QC's own mutation to the file QC named; pass@5 showed **four agents built their own
+  synthetic stage-3 fixtures, self-validated, and the bug stayed invisible** — the no-self-check
+  amplifier surviving the agent's own checker; built through a critical Actions outage at zero cost
+  by changing nothing; accepted at pass@5 1/5, avg@5 0.200, rubric 31/31 both pushes
