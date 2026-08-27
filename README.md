@@ -101,3 +101,16 @@ Each file is named after its task (`dynamo-<hash>-<category-slug>-case-study.md`
   amplifier surviving the agent's own checker; built through a critical Actions outage at zero cost
   by changing nothing; accepted at pass@5 1/5, avg@5 0.200, rubric 31/31 both pushes
 - [dynamo-32fad5e replay-panel-capture](dynamo-32fad5e-replay-panel-capture.md) — Hardware, Embedded, and Low-Level Systems / Embedded and firmware; **recalled = solved, twice** (HD44780 pass@2 2/2, SSD1306 addressing-only pass@5 4/5) — a display controller's addressing is the model's headline knowledge; difficulty finally came from **state-management breadth** (6 independent sample-inert axes, all-or-nothing), accepted at pass@5 2/5
+- [dynamo-426dea0 serve-thesaurus-lookups](dynamo-426dea0-serve-thesaurus-lookups.md) — Data
+  Querying and Databases / **Graph and semantic queries** (second in this sub-category, after
+  `ledgergraph-canon`); **the cheapest acceptance in this corpus — one push, zero content
+  revisions, every gate green first try**, because every verifier-soundness fix these files record
+  was built *before* push one rather than learned from a block; a SKOS lookup service whose shipped
+  export was written by a nightly dump that wrote every relation out in full, so predicate-indexing
+  reproduces it perfectly while twelve held-back exports leave the relations to be derived from the
+  property axioms; **six axes that are one root misreading in six places, and all six gated** where
+  the corpus's standing pattern is half of them gating nothing; an agent that built `exactMatch`'s
+  transitive closure at step 9 and **deleted it at step 11** on a confident misrecollection of the
+  standard; a bypass probe reporting a **false reward-1.000 hole** because a macOS host bind mount
+  carried host modes over Harbor's already-sealed `/tests`, settled by printing `ls -ld` from inside
+  the real verifier instead of hardening anything; accepted at pass@5 **0/5 solved, avg@5 = 0.000**
