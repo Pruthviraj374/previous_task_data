@@ -137,3 +137,18 @@ Each file is named after its task (`dynamo-<hash>-<category-slug>-case-study.md`
   refuting three cheaper readings outright; accepted on **one push, zero revisions**, pass@5
   **0/5 solved, avg@5 = 0.000**, rubric PASS 31/31 first cycle, pass@5's own analysis noting **no
   two failing trials converged on the same bug set**
+- [dynamo-fd4f169 convert-letterform-packs](dynamo-fd4f169-convert-letterform-packs.md) — File
+  and Media Operations / **File format conversion** (first in this sub-category); **accepted on
+  one push, zero revisions**, pass@5 **0/5 solved, avg@5 = 0.000**, rubric 31/31 and `qc_gate`
+  clean on the first cycle. The repo's own **closed** PR had already measured 12 reference solves
+  across six EBCDIC-conversion architectures and concluded that withholding member values turns a
+  crux into constraint search — reading it deleted derivation depth, reconciliation anchors and
+  the whole mainframe family before any code. The replacement is an invented container carrying
+  **Type 2 charstrings** with Adobe TN #5177 named and nothing restated; **all six** conditional
+  provisions gated, which this corpus has seen once before and for the opposite reason — six
+  different sections of one document rather than one misreading in six places, so
+  `collate-modpool-batches`'s *needing a spec is not reading a spec* is confirmed a second time.
+  Ground truth authored by hand and verified by fontTools on 22 packs and 4,000 randomised
+  charstrings. Also: a mutant battery ate an **untracked** reference that `git checkout` could not
+  restore, and an axis observable only through a quantised quantity discriminates nothing until
+  the fixture crosses the boundary
