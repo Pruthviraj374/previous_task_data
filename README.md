@@ -152,3 +152,19 @@ Each file is named after its task (`dynamo-<hash>-<category-slug>-case-study.md`
   charstrings. Also: a mutant battery ate an **untracked** reference that `git checkout` could not
   restore, and an axis observable only through a quantised quantity discriminates nothing until
   the fixture crosses the boundary
+- [dynamo-bf3ad9d meter-profile-decode](dynamo-bf3ad9d-meter-profile-decode.md) — Security /
+  **Reverse Engineering**; **eight designs** before a stump — a delivered PR blocked reuse/reskin
+  under `cosine_similarity` (concept-level), a fictional register-rollover modulus had no
+  fair-and-hidden middle, and three named-format-parse cruxes (DER long-form, ETF large-tuple, ETF
+  little-endian bigint) all landed pass@2 2/2 because this model reads a named spec fully and
+  implements every branch once told to handle the whole format; the escape was **Pattern D** — an
+  undocumented non-linear integrity code (`h*(h+K) mod P`) recoverable only by completing the
+  square into a quadratic-residue test, genuine pass@2 0/2 on all four pushes to this design.
+  `qc_gate` still scrutinized Pattern D's own coverage (no held-out register ever decreased) and
+  uniqueness (does the sample truly *force* the scheme, or just happen to fit first) — both
+  answered with generator-side proofs, zero new agent-visible disclosure. `tier1` held twice on
+  findings already functionally fixed because it tracks whether a diff *touches* every open item,
+  not whether it's resolved; fixed by making the guards more explicit and provably correct,
+  confirmed against hand-built Docker attacks (symlinked leaf, symlinked parent dir, corrupted
+  sample) rather than trusted from local reasoning. Accepted at pass@5 **0/5, avg@5 = 0.000**,
+  rubric 7/7 clean on every trial
