@@ -114,3 +114,18 @@ Each file is named after its task (`dynamo-<hash>-<category-slug>-case-study.md`
   standard; a bypass probe reporting a **false reward-1.000 hole** because a macOS host bind mount
   carried host modes over Harbor's already-sealed `/tests`, settled by printing `ls -ld` from inside
   the real verifier instead of hardening anything; accepted at pass@5 **0/5 solved, avg@5 = 0.000**
+- [dynamo-0c1a86f restore-terminal-lexer](dynamo-0c1a86f-restore-terminal-lexer.md) — Games
+  Puzzles and Interactive Simulation / **Interactive text games** (first in this sub-category);
+  the repo's own closed prior PR (33 commits, a compiled obfuscated interactive binary) blocked
+  `qc_gate` on **12 findings with every evidence field empty** because QC's probes could not
+  execute claims against a black-box binary — the fix was a deterministic pure-Python Z-machine
+  lexical analyser whose every soundness claim (10 generator invariants, 14 mutation readings, 6
+  bypass attacks) is scored **through the real `harbor` pipeline** by `tools/probe.py`, clearing
+  `qc_gate` 37/37 with **zero findings on cycle one**; crux is one real Z-Machine Standards
+  Document provision — the released title's own version/config is mistaken for the format —
+  surfacing in five structurally different places (separator-as-word, lower-casing, version-
+  dependent dictionary resolution, version-dependent text-buffer base, a custom alphabet table's
+  reserved slots), the sample selected **by measurement** to be inert under all five while
+  refuting three cheaper readings outright; accepted on **one push, zero revisions**, pass@5
+  **0/5 solved, avg@5 = 0.000**, rubric PASS 31/31 first cycle, pass@5's own analysis noting **no
+  two failing trials converged on the same bug set**
