@@ -75,6 +75,14 @@ Each file is named after its task (`dynamo-<hash>-<category-slug>-case-study.md`
   records exist at all, with the named estimator left as breadth the model handles correctly.
   Also records a **byte-identical agent surface returning 0-solved then 2-solved**, and three of
   six pushes lost to avoidable rubric defects rather than difficulty; accepted at pass@5 1/5
+- [dynamo-dbbc1e3 rebuild-listings-copy](dynamo-dbbc1e3-rebuild-listings-copy.md) — File and
+  Media Operations / **Text editing and manipulation** (first in subcategory); a DVB
+  service-information text decoder whose fifteen worked pages form an **equivalence class** —
+  they render identically under every misreading, so the shipped self-check certifies the
+  wrong answer instead of merely omitting the crux; `qc_gate` B5 on a single contested byte
+  answered by **deleting it from the graded set** and proving both readings interchangeable,
+  with a probe requiring the alternative to score 1; accepted in 3 pushes at pass@5 **0/5**,
+  avg@5 0.000, 5 good valid fails
 - [dynamo-03da6c3 collate-modpool-batches](dynamo-03da6c3-collate-modpool-batches.md) —
   Mathematics and Formal Reasoning / **Number theory and exact arithmetic** (first in this
   category); accepted in **two pushes** by applying the derivability rule *prospectively* —
