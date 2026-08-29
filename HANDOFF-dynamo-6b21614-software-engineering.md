@@ -1,15 +1,65 @@
 HANDOFF: dynamo-6b21614-software-engineering (PR #3)
 =====================================================
-Last updated: after pushing commit `45b5b30` (2026-08-30). The fourth
-design (`journal-savepoints`) got a genuine `pass@2` PASS on 2026-08-30
-(commit `58ec4e7`) -- the first time in eleven commits across four designs
-this PR has cleared that gate. `qc_gate` then caught a real verifier
-soundness gap (see "SECOND UPDATE" below); fixed and pushed as `45b5b30`,
-awaiting the pipeline's re-run (pushing re-rolls the whole pipeline
-including `pass@2`, so that PASS needs to reproduce on this commit too --
-not treated as banked). Everything below the first "UPDATE (2026-08-29)"
-marker is the original handoff as it stood at `d07d273`, kept for full
-history; read both updates first, most recent first.
+Last updated: after pushing commit `b54c620` (2026-08-30). Everything
+below the first "UPDATE (2026-08-29)" marker is the original handoff as
+it stood at `d07d273`, kept for full history; read the updates below
+first, most recent first.
+
+-----------------------------------------------------------------------
+THIRD UPDATE (2026-08-30): pass@2 flipped to 2/2-solved on the id-fix
+commit -- diagnosed as ordinary shallow-coverage escalation, not
+saturation, fixed with three composition tests, re-pushed.
+-----------------------------------------------------------------------
+Commit `45b5b30` (the qc_gate id-uniqueness fix) re-rolled the whole
+pipeline and `pass@2` came back 2/2 solved in ~16 min (both trials solved
+all 15 tests in ~10-12 min each) -- a flip from the PASS on the immediately
+preceding commit (`58ec4e7`, 52m34s). Per the standing rule to stop and
+verify before reacting to a result like this
+([[dynamo_stop_and_verify_on_next_failure]]), checked: nothing about the
+crux itself changed between the two commits -- `journal_reference.rs`,
+`journal.h`, and `instruction.md` were untouched; only the id-value
+test/client-output fix changed. The `pass2-difficulty-suggestion` comment's
+own root-cause language confirmed this is NOT the "whole shape is
+saturated" pattern that killed the first three designs: it named a
+specific, narrow, fixable gap -- `tests/test_outputs.py` only exercised
+each disclosed rule in isolation with shallow scenarios (at most two
+levels of nesting, one reentrant savepoint per callback, rollback/release
+only of the outermost open scope) -- not "this problem class is
+well-represented in training data" language. It gave three concrete,
+well-reasoned composition suggestions, all still built from already-
+disclosed rules (not new hidden facts): rollback of a *middle*, not
+outermost, open savepoint; a three-level release with the same key
+written at every level; and a validate rejection where the callback
+commits one reentrant savepoint before abandoning a second. Implemented
+all three verbatim as new tests, verified each by hand-tracing against the
+reference (all correct on the first try, all 18 tests pass), and added a
+sixth mutant (rollback ignoring which id was named, always closing only
+the top frame -- the exact bug the suggestion's first point named) which
+is caught only by the new middle-rollback test; the original five-mutant
+battery re-confirmed clean. Recalibrated from a fresh clone (oracle=1.0,
+nop=0.0) and pushed as `b54c620`. Also worth noting for calibrating
+expectations: the ORIGINAL pass@2 PASS (`58ec4e7`) was itself weak
+evidence of genuine crux difficulty -- one trial's fail was an off-crux
+Rust `RefCell` borrow-checker compile error, which `deep_review` correctly
+graded `difficulty_evidence = N/A`, not a positive confirmation. This new
+2/2-solved result is, if anything, more informative than the PASS it
+replaced.
+
+**Next steps:** watch `gh pr checks 3` for the pipeline to complete on
+`b54c620`, especially `pass@2` again. If this ALSO comes back 2/2 solved,
+that would be the first real signal (two clean solves on genuinely
+different scenario depths within the SAME crux family) that the
+reentrant-scope-stack shape itself, not just shallow test coverage, may be
+approaching saturation for this model -- worth writing up as a sharpening
+of [[dynamo_saturated_crux_families]] if it happens. If it produces a
+genuine valid fail, proceed to `qc_gate` (should be clean, but re-check)
+and `pass@5` -- the actual target.
+
+-----------------------------------------------------------------------
+SECOND UPDATE (2026-08-30): pass@2 PASSED once, then qc_gate found a real
+bug, fixed, re-pushed. (Superseded in part by the THIRD UPDATE above --
+the pass@2 PASS described here did not survive the qc_gate-fix re-push.)
+-----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
 SECOND UPDATE (2026-08-30): pass@2 PASSED, then qc_gate found a real bug,
