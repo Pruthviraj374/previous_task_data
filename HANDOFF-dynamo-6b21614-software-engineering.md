@@ -1,9 +1,59 @@
 HANDOFF: dynamo-6b21614-software-engineering (PR #3)
 =====================================================
-Last updated: after pushing commit `b54c620` (2026-08-30). Everything
+Last updated: after pushing commit `1335a3e` (2026-08-30). Everything
 below the first "UPDATE (2026-08-29)" marker is the original handoff as
 it stood at `d07d273`, kept for full history; read the updates below
 first, most recent first.
+
+-----------------------------------------------------------------------
+FOURTH UPDATE (2026-08-30): pass@2 2/2-solved again on `b54c620` (the
+composition-depth fix) -- but the bot's own language keeps confirming
+this is ordinary iteration, not saturation.
+-----------------------------------------------------------------------
+`b54c620` also came back 2/2 solved (~9 and ~17 min, all 18 tests), but
+critically the pass2-difficulty-suggestion's language SHARPENED, not
+weakened: "The `Vec<Scope>` + per-scope `HashMap` with entry-depth
+watermark truncation is the natural Rust idiom for the disclosed
+contract, and both agents converged on it independently... The three
+composition tests added after the prior round did not introduce a case
+that breaks the natural implementation." This is a genuine "the natural
+correct idiom already satisfies everything disclosed" result, not a
+"training-data-memorized problem class" result -- there is still no
+`saturated_crux_family`-style language anywhere across three consecutive
+rounds on this specific design. The bot named one concrete, previously
+undisclosed-but-fair edge instead: `journal_validate`'s snapshot-vs-live
+semantics when the callback writes to the CURRENT scope during iteration
+(adds a new key, or overwrites an already-snapshotted, not-yet-visited
+key). The reference already implements snapshot-at-entry (captures
+`Vec<(String,String)>` once before the callback loop even starts) but
+never disclosed or tested it. Fixed: added one sentence to both
+`instruction.md` and `journal.h`'s doc comment stating the snapshot rule
+explicitly, and one new test (`test_validate_iterates_a_snapshot_of_the_current_scope`)
+where the callback both adds a later key and overwrites an earlier one
+mid-iteration -- asserting neither affects the in-flight visitation, but
+both are real (visible via `GET`) once `validate` returns. A seventh
+mutant (re-reading the live scope map on every step instead of
+snapshotting at entry) confirmed caught. Recalibrated from a fresh clone,
+pushed as `1335a3e`.
+
+**Next steps:** watch `gh pr checks 3` for `1335a3e`. This is now the
+FOURTH consecutive escalation round on the exact same crux family
+(reentrant scope-stack bookkeeping) with the bot naming a real, specific,
+fixable gap each time rather than declaring the shape saturated -- a
+meaningfully different trajectory than every earlier design on this PR,
+which hit "well-represented in training data" language on the FIRST or
+SECOND attempt every time. If `pass@2` solves 2/2 a THIRD time on this
+exact design with the bot again naming something concrete and fixable,
+keep iterating -- this pattern (concrete, addressable gaps rather than
+"whole shape is known") is itself evidence this is a genuinely richer
+crux family than the earlier three designs, not a sign to give up. If the
+bot's language ever shifts to saturation language ("well-represented in
+training data for this class of problem", "no meaningful divergence from
+the golden approach"), that's the actual signal to stop and consult
+[[dynamo_saturated_crux_families]] / [[dynamo_problem_class_saturation]]
+before continuing.
+
+-----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
 THIRD UPDATE (2026-08-30): pass@2 flipped to 2/2-solved on the id-fix
