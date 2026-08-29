@@ -1,7 +1,108 @@
 HANDOFF: dynamo-6b21614-software-engineering (PR #3)
 =====================================================
-Last updated: after pushing commit `d07d273` (2026-08-29). No new commit
-made after this result — this handoff exists instead of a further guess.
+Last updated: after pushing commit `4dd3de9` (2026-08-29) -- a fourth,
+structurally new design. Everything below the "UPDATE (2026-08-29)" marker
+is the original handoff as it stood at `d07d273`, kept for full history;
+read the update first.
+
+-----------------------------------------------------------------------
+UPDATE (2026-08-29): FOURTH DESIGN PUSHED, commit `4dd3de9`, awaiting
+gates. User chose "try compound-breadth instead" over continuing to hunt
+for a single obscure real-world convention (option A) or accepting a dead
+end (option C). A fresh-domain research pass (three legacy-format
+modernization candidates: COBOL COMP-3 packed decimal, ZIP general-purpose
+bit flags, AppleSingle/AppleDouble) found no buildable candidate -- all
+three died on the non-mainstream or fetch-resistance filters, same as six
+earlier candidates on this PR. While checking git/PR state per
+[[dynamo_verify_git_state_before_resuming]], found this exact task repo
+already has a genuinely relevant CLOSED PR #2 by a different author
+("Refactor reentrant relay ABI contract", `dynamo/reentrant-abi`): a Rust
+cdylib preserving a C ABI with 7 coupled contracts (reentrant-frame errno
+snapshotting across nested/re-entering callback invocations, cancellation-
+consumption boundary, unwind containment, allocator ownership, a
+destruction tombstone, context-local value computation, legacy-symbol
+removal). It got real difficulty -- pass@2 1/2 (genuine valid fail),
+pass@5 3/5 (avg@5=0.600) -- blocked only by the platform's specific gate
+arithmetic (needed one more failure of a particular type) and two
+pre-existing QC issues, not by being too easy. Both pass@5 failures shared
+one root cause: mishandling errno state across nested/reentrant call
+frames on frame-pop, EVEN THOUGH the governing rule was stated explicitly
+in the instruction. This is a materially different difficulty source than
+everything tried on this PR before: not "recall/derive a fact" but
+"correctly thread state through nested/reentrant bookkeeping," which
+survives disclosure in a way pure spec-transcription doesn't.
+
+Fourth design, `dynamo/journal-savepoints`: a Rust cdylib reimplementing a
+legacy key-value "journal" library with SAVEPOINT-style nested transaction
+scopes against a fixed C header (`journal.h`), deliberately structured
+around the SAME difficulty source (a scope stack manipulated by nested and
+reentrant operations) but a different concrete scenario, mechanism set,
+and story than PR #2's relay-ABI design (to avoid duplicate-similarity
+risk and because it's independently authored content). Four coupled rules,
+all stated precisely in instruction.md (fairness first, per this task's
+whole prior history): layered read visibility across nested scopes;
+`journal_savepoint_release(id)` folding not just `id`'s own writes but
+every still-open nested child's into `id`'s parent, innermost-wins on a
+shared key, closing everything folded; `journal_savepoint_rollback(id)`
+discarding `id`'s own writes and everything nested inside it, but --
+unlike release -- leaving `id` itself open afterward; and
+`journal_validate`'s reentrant callback contract, where the callback may
+call back into the same handle (including opening its own nested
+savepoints) before accepting/rejecting a key, and a rejection must discard
+exactly the savepoints opened during the call and left open when it
+returns -- both directions graded: never leaking one the callback opened
+and left open, and never undoing one the callback opened AND itself
+already explicitly released (committing it into an ancestor) before the
+rejection happened. That second direction is the sharpest test in the
+suite -- it directly punishes the natural "just restore everything to how
+it was on entry" shortcut a full-state-snapshot implementation would take.
+
+Built and verified locally before push: Docker image built from a fresh
+`ubuntu:24.04` base (rustc + build-essential + pytest baked in, matching
+the proven-working precedent from PR #2's own Dockerfile, including
+reusing its exact pinned base-image digest). Reference `journal.rs`
+compiles and all 14 tests in `tests/test_outputs.py` pass against it (a
+real `rustc`-built cdylib driven by a small hand-written C client,
+`tests/clients/client.c`, that interprets a line-based op script -- not
+Python calling into Rust, and not source inspection). A four-mutant
+battery was built and run inside the same Docker image BEFORE pushing,
+confirming each rule is independently load-bearing: (1) release that only
+merges `id`'s own frame, ignoring a nested unreleased child -- caught by
+`test_release_folds_nested_children`; (2) rollback that closes `id` like
+release does instead of leaving it open -- caught by two tests
+(`test_rollback_keeps_savepoint_open`, `test_rollback_discards_nested_children`);
+(3) validate that never cleans up a leaked reentrant scope on rejection --
+caught by `test_validate_reject_discards_unreleased_reentrant_work`; (4)
+validate that over-rolls-back via a full-state snapshot/restore instead of
+a depth-based truncate, wrongly undoing already-committed work -- caught
+by `test_validate_reject_preserves_already_committed_reentrant_work`. None
+of the four mutants scored a false 1.0. `harbor run -p . --agent oracle` =
+1.0, `--agent nop` = 0.0, both confirmed locally right before push.
+Pushed to `fork/submission` at commit `4dd3de9`; no run was in flight at
+push time (checked `gh pr checks 3` first, per standing rule).
+
+**Next steps for whoever picks this up:** watch `gh pr checks 3 --repo
+handshake-project-dynamo/dynamo-6b21614-software-engineering` for the
+rubric-review result first (fast, minutes) -- if it clears
+`code_dependent`/`essential_difficulty` (should, per the CLI/real-build/
+real-C-client-execution shape, matching the reasoning that already fixed
+this exact gate on this exact PR twice), then watch for `pass2` (slow,
+~25-30 min per PR #2's precedent). A genuine valid fail on pass2 is the
+goal this time, unlike every prior design on this PR where 2/2-solved was
+the actual failure mode. If pass2 comes back 2/2 solved anyway, read the
+trial trace's root-cause language carefully before reacting -- distinguish
+"the reentrant-bookkeeping shape itself is now also saturated for this
+model" (a genuinely new, itself-interesting finding, worth its own memory
+entry) from "this specific mechanism set was too easy relative to PR #2's"
+(routine escalation, e.g. add a second reentrant crux or a third nesting
+level) per [[dynamo_saturated_crux_families]]'s shortcut-vs-mastery
+distinction. If it produces a genuine valid fail and clears qc_gate, this
+is the strongest result this PR has had across four designs -- treat any
+gate friction from there as normal iteration, not a redesign signal.
+
+-----------------------------------------------------------------------
+ORIGINAL HANDOFF (as of commit `d07d273`, kept for full history below)
+-----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
 STATUS IN ONE SENTENCE: three structurally different task designs across
