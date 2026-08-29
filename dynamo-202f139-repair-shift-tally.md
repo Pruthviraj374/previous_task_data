@@ -1,19 +1,25 @@
-# dynamo/repair-shift-tally — four consecutive clean pass@2 solves, three genuinely different traps, one dead end
+# dynamo-202f139 — a task that died at pass@2 four times, and the rebuild that was accepted
 
 | | |
 |---|---|
-| **Outcome** | **DEAD END — handed back for human input.** PR left `OPEN`, labels `in-progress,needs-revision`. Not accepted; not abandoned either — see §7 for what a human reviewer should do with it |
+| **Outcome** | **ACCEPTED 2026-08-30** at commit `c047280`, as `dynamo/repair-standby-mirror`. **pass@5 = 0/5 solved, avg@5 = 0.000, 3 good valid failures.** Every gate green |
 | **Repo** | `dynamo-202f139-debugging-and-repair`, branch `submission`, fork `charan-sr` |
 | **PR** | https://github.com/handshake-project-dynamo/dynamo-202f139-debugging-and-repair/pull/2 |
 | **Category / sub** | Debugging and Repair / Performance Debugging (pre-seeded) |
-| **Benchmarked model** | `task.toml` names Opus-4.8 / Terminus-2; pass@2 stickies call it `Model A` |
-| **Final commit** | `4338bde` |
-| **Headline** | Four consecutive `pass@2` runs came back **2/2 solved**, across three structurally different attempts to add difficulty (reworded vocabulary, an explicit disclosed rule, misdirection via a false comment). Two of those pushes also cost a `qc_gate`/`deep_review` near-miss before the difficulty question was even reachable. This is the first case study in this playbook that is **not** a happy ending — it is written to save whoever picks this up from re-trying what's already been tried |
+| **Benchmarked model** | `task.toml` names Opus-4.8 / Terminus-2; stickies call it `Model A` |
+| **Two tasks, one PR** | Part One `dynamo/repair-shift-tally` (seven `sh`/`awk` gaps) died at `pass@2` **four times**, last head `4338bde`. Part Two `dynamo/repair-standby-mirror` (rsync) was accepted in **two pushes** |
+| **Headline** | The awk task's seven gaps were all *logically forced* consequences of rules its spec stated outright, so a careful reader derived every one. The rebuild moved the difficulty into **a real tool's defaults**, and made **the performance fix itself the thing that hands the decision to the tool**. `pass@2` went 2/2-solved (x4) -> 0/2-solved (x2), `pass@5` 5/5-solved -> **0/5** |
 
-This is the playbook's first non-`ACCEPTED` entry. Everything below is written the way the other
-entries are, but the point of this one is different: it exists so the next person (human or
-agent) does not spend another 4 pushes rediscovering that this task's difficulty ceiling has
-already been found for this task **shape**.
+**Read Part Two first if you are picking a new task.** Part One is the failure and is still worth
+reading, because it is *why* Part Two looks the way it does — but the transferable rule is in
+§11-§16.
+
+---
+
+# PART ONE — `dynamo/repair-shift-tally`, the task that died
+
+Everything in §1-§10 describes the design that was abandoned. It is kept in full because the
+null result is the evidence base for Part Two.
 
 ---
 
@@ -199,7 +205,7 @@ explicit sign-off, which is exactly why this was handed back rather than attempt
   idea) so a future reader doesn't have to re-derive them from commit messages.
 - **Never push while a check is pending; one push per round; batch every fix** — held to across
   all six pushes this session.
-- **No AI/Claude attribution anywhere** in commits, PR body, or task files.
+- **No AI attribution anywhere** in commits, PR body, or task files.
 - **A repeated null result is itself the deliverable, not a reason to keep iterating alone** —
   after three different mechanisms and four clean solves, the responsible move was to stop and
   hand back with a clear account of what was tried, not to keep spending pushes on variations.
@@ -252,3 +258,243 @@ misdirection too. The one lever not tried, moving a rule from disclosed-in-text 
 inferable-from-data-only, is a different task, not a patch, and deserved a human decision
 rather than a fifth solo push after two near-misses already cost real fairness bugs on much
 smaller changes.
+
+---
+
+# PART TWO — `dynamo/repair-standby-mirror`, the rebuild that was accepted
+
+Two pushes, 2026-08-29/30. `pass@2` 0/2 twice, `qc_gate` clean in one round, `pass@5` **0/5,
+avg@5 0.000**, accepted at `c047280`.
+
+---
+
+## 11. Path (a) first: probing the old appliance's remaining tools, and why it is dead
+
+Before rebuilding, the cheap option was searched honestly: find a real, silent, non-mainstream
+behaviour in the tools the awk task's appliance already carried. **25 probes** were run against
+the pinned image (gawk 5.2.1 / coreutils 9.1 / Debian 12, `sh` = dash). Real behaviours were
+found, and all of them are useless here:
+
+| behaviour | verified |
+|---|---|
+| `sort -n` silently reads a leading-`+` number as 0 (`+2` sorts as 0); awk reads it as 2 | yes |
+| `sort -V` uses Debian `filevercmp`: `a~1 < a < a.b < a1 < a.1 < b` | yes |
+| `sort -h`: `1k` before `1K`; `sort -g` parses `0x10` as 16, orders `nan` first and `inf` last | yes |
+| GNU `sort` is unstable by default — the last-resort whole-line compare reorders equal keys | yes |
+| `sort -k1,1 -u` deduplicates on the **key**, silently dropping lines differing elsewhere | yes |
+| gawk `OFMT`/`CONVFMT` = `%.6g`: `print 12345678.5` gives `1.23457e+07` | yes |
+| gawk `printf "%d"` truncates (3.5 to 3) while `%.0f` rounds half-to-even (3.5 to 4) | yes |
+| dash's `echo` expands backslash escapes in data; dash's `printf %d` reads `010` as octal 8 | yes |
+| `uniq -c` pads its count to a fixed width; `substr` rounds fractional indices; `RS=""` puts newline in `FS` | yes |
+
+**Why none of it works, and this is the transferable part:**
+
+> **A tool's silent behaviour can only be a crux if the correct solution is FORCED TO DELEGATE
+> to it.** All four `pass@2` traces on the awk task showed the same shape — buffer the whole
+> journal into gawk arrays, decide in `END`, emit. Such a program never invokes `sort -n`,
+> `sort -V`, `uniq -c`, `join` or `comm`, so no quirk of those tools can ever fire against it.
+> gawk is a general-purpose imperative language: it **delegates nothing**. Every rule gets
+> written out explicitly, so nothing can be silently wrong.
+
+This is the missing conjunct in `dynamo_engine_choice_for_performance_debugging`'s filter (1).
+"The engine is installed and has silent behaviours" is not enough. Contrast the engines that
+have won in this subcategory — SQL (`LOWER()`, integer division, `COUNT(col)`, `SUM` over no
+rows), nginx (`gzip_types`, `gzip_proxied`), rsync (`-H`, `-S`, `-c`) — every one is
+**declarative or configuration-driven**, so the decision cannot be avoided.
+
+**Do not re-probe the coreutils/awk toolset.** It is settled.
+
+---
+
+## 12. The design rule that produced the accepted task
+
+Two accepted precedents in this exact subcategory (`statement-rollup-repair`,
+`repair-edge-compression`) plus `repair-portal-dispatch` next door all share one shape:
+
+> **Grade a real tool's deterministic output, never wall-clock. The crux is the tool's silent
+> DEFAULTS. The spec states a universal and never names the case that makes it bite.**
+
+The rebuild adds one thing to that, and it is the part worth stealing:
+
+> **Make the performance fix itself be the delegation.** The shipped `mirror.sh` starts three
+> child processes per archived file — 41s against a 12s window. A per-record loop *decides
+> everything itself*. The repair that fits the window is one tree-level `rsync`, and that single
+> act is exactly what hands five decisions to rsync's defaults. The engine cannot be routed
+> around, because routing around it is what misses the window.
+
+Five deciding properties, none named in any agent-visible file (verified by grep):
+
+| | universal the spec states | what one pass does by default |
+|---|---|---|
+| A | the standby occupies no more than the archive | names sharing one file arrive as separate files |
+| B | same | a file written with holes is written back solid |
+| C | every file present with the same contents | a record changed under the same length and stamp is skipped |
+| D | the standby holds nothing the archive does not | a dropped record stays on the standby |
+| E | `scratch` *at the root of the volume* is not archived | an unanchored exclusion also drops a year's own `scratch/` of real records |
+
+Measured before the first push: `-a --delete` fails 9 of 13 volumes; **`-aHAX --delete
+--exclude=scratch` — the answer a competent engineer writes reflexively — fails 8 and passes all
+three ordinary volumes.**
+
+---
+
+## 13. Engine selection: probe, don't reason
+
+Three candidates were probed in a real Debian image before committing to one. Two probe runs
+killed the alternatives in about twenty minutes.
+
+- **rsync — chosen.** `-a` alone: 104,857,600 B transferred, destination **101 MB**, hardlink
+  count 9 collapsing to **1**. `-aHS`: 71,303,168 B, destination **5 MB**. A same-size and
+  same-mtime content change is **silently skipped**. Five independent silent defaults,
+  deterministic observables (byte counts, link partition, allocated blocks, file bytes), no
+  timing needed.
+- **git packfiles** — viable but thinner: default `core.bigFileThreshold` gives a 696 KB pack,
+  delta-disabled 4112 KB. Fewer genuinely independent axes.
+- **DuckDB N+1 to single scan** — strongest raw precedent but structurally *the same task* as the
+  SQLite sibling already in the dataset. Rejected on similarity risk. **This judgement was
+  confirmed**: `similarity` and `cosine_similarity` both passed for rsync.
+
+---
+
+## 14. Two defects the process caught that would otherwise have shipped
+
+**(a) The mutation battery found that two of the five axes were testing nothing.**
+`m5_no_hardlinks` and `m6_no_sparse` both scored **reward 1.000** on the first battery run. The
+fixture model declared the shared names and the sparse images in *both* the primary and last
+night's standby, so rsync found them already present and matching and skipped them — leaving the
+correct link topology and hole layout in place **by accident**. Fixed by making both the night's
+own work, declared in the primary only, so the run is what has to lay them down.
+
+> `statement-rollup-repair`'s rule, confirmed again: **a mutant that produces an identical answer
+> is a coverage hole, not a dead trap.** Without the battery this ships with its two headline
+> axes inert.
+
+**(b) `harbor run --agent nop` caught a verifier defect that local calibration could not.**
+The first nop run returned `RewardFileNotFoundError` while calibration was clean.
+`subprocess.run(..., timeout=)` kills only the direct child. The shipped broken script is a
+`while read` loop starting three processes per record, so at the window the loop's subshell and
+its `rsync`/`dirname`/`mkdir` grandchildren **survived as orphans** — thirteen runaways at once.
+The authoring host has many cores and never showed it; `task.toml` sets **`cpus = 1`**, so under
+harbor they starved the verifier itself. Fixed with `Popen(start_new_session=True)` plus
+`os.killpg` at the window and again in a `finally`.
+
+> **Local calibration on a many-core host does not reproduce `cpus = 1`.** Reproduce the real
+> constraint directly — `docker run --cpus 1 --memory 2048m` — before trusting any timing- or
+> process-related result. And never wave `--agent nop` through as "obviously 0.000": it is the
+> only check that caught this.
+
+---
+
+## 15. The one `qc_gate` finding, and how to fix a fairness gap without giving the crux away
+
+`qc_gate` blocked the first push on exactly one Major finding (B5, Underdetermined /
+Hidden-Knowledge Mapping); 36 of 37 checks passed.
+
+> *MIRROR.md never defines whether a file is 'unchanged' by content or by metadata; the endurance
+> clause says 'leave alone any file whose archived copy the standby already holds unchanged', and
+> the disclosed sample has 0 files where size+mtime match [but contents differ].*
+
+**The finding was legitimate, not a nitpick.** As written, the clause could be read as
+*licensing* the size+mtime quick check — which is precisely the judgement axis C punishes. An
+agent could be failed for doing what the spec appeared to allow.
+
+The obvious fix — saying that size and mtime can match while contents differ — **discloses axis C
+outright**, which is exactly how this same task's Part One push 6 turned a fairness fix into the
+hint that removed its own difficulty. QC also suggested "or examples"; adding a sample file with
+that property would have destroyed the sample's inertness, the invariant the whole design rests
+on.
+
+**What worked: define the ambiguous term by pointing back at requirements already stated.**
+
+> "A file the standby already holds the way the list above requires — the archive's contents,
+> under the archive's permissions, at the archive's modification time — is a file this night did
+> not change, and a run must leave it where it is rather than laying it down again."
+
+Contents are explicitly part of the test, so the clause can no longer be read as permission to
+trust the surface; it still never says *how* a file could look the same and not be. It matched
+the verifier's existing comparison exactly, so no verifier change was needed and the calibration
+table came back byte-identical. `qc_gate` passed on the next push.
+
+> **Rule: when a gate calls a term underdetermined, define it by reference to what the spec
+> already requires — not by explaining the failure mode. The first is a fairness fix; the second
+> is a hint.**
+
+---
+
+## 16. What the graders said, and the numbers
+
+`pass@2` on **both** pushes: **0/2 solved, 2 valid-fail, "Rerun Recommended: NO"**. On the second
+push every rubric column passed on both trials.
+
+`pass@5`: **0/5 solved, avg@5 = 0.000, 3 good valid failures.** All five trials failed the same
+seven volumes; nine tests passed in every trial, including the timing test and all three ordinary
+volumes (v01, v02, v13). All five missed the same three flags — `-H`, `-S`, `-c` — while every
+agent got `--delete` and the anchored exclude right.
+
+Measured overshoot on the standby, from the grader's own table:
+
+| volume | archive | agent standby | off by |
+|---|---|---|---|
+| v03-held | 13.3 MiB | 53.3 MiB | 4x, 10 hardlink groups lost |
+| v04-images | 3.8 MiB | 99.3 MiB | **26x** |
+| v11-images-carry | 3.7 MiB | 59.3 MiB | 16x |
+| v12-full | 8.7 MiB | 86.3 MiB | 10x, plus 8 files with wrong contents |
+
+The grader named the design invariant directly:
+
+> "The proximate cause of all five early-quit completions is the **false-positive acceptance
+> signal**: the sample volume was deliberately constructed with none of the five failure
+> mechanisms, so run-checks.sh returned all-green for every agent's incomplete script. **No agent
+> had any in-band signal that its solution was deficient.**"
+
+That invariant was measured before pushing, not assumed: all seven wrong repairs (`m1` through
+`m7`) run the shipped self-check and get "all checks passed".
+
+---
+
+## 17. Reusable checklist (Part Two)
+
+Design:
+- [ ] Ask not "does this tool have silent behaviours?" but **"does the correct solution have to
+      let this tool decide?"** A general-purpose language delegates nothing.
+- [ ] Prefer a design where **the performance fix and the delegation are the same act** — then the
+      engine cannot be routed around.
+- [ ] Write out the answer you most expect the model to produce (here `rsync -aHAX --delete`) and
+      **score it** before pushing. If it passes, there is no task.
+- [ ] Check the shortlisted engine against what is already in the dataset; a same-shape rebuild on
+      a different engine is a `similarity` risk.
+- [ ] State universals; never name the deciding case. Grep the agent-visible files for the
+      vocabulary of every mechanism and require zero hits.
+
+Verify:
+- [ ] Run a mutant per stated rule. **Any mutant scoring 1.000 is a coverage hole** — check
+      whether the fixture lets the right answer survive *by accident*.
+- [ ] Require single-mistake mutants to fail **disjoint** sets and to pass every ordinary volume.
+- [ ] Measure that the shipped self-check is **green under every wrong repair**; assert it, don't
+      assume it.
+- [ ] Reproduce the environment's real limits (`--cpus 1`) before trusting timing or process
+      behaviour; kill the whole process group, not just the child.
+- [ ] Time the verifier against the **broken** program (149s here, against a 300s probe cap).
+- [ ] Run reward-hack probes: replicate nothing, empty the target, stand a link in front of the
+      source, and share the source's own files via `--link-dest`.
+
+---
+
+## 18. One paragraph
+
+A seven-gap `sh`/`awk` repair task cleared every gate except difficulty and died at `pass@2`
+four consecutive times, because all seven of its gaps were logically forced consequences of rules
+its own spec stated outright. Twenty-five probes of the appliance's remaining tools found several
+real silent behaviours and no usable one, for a reason worth keeping: the solution shape agents
+converge on — one buffered `awk` pass — never invokes any of those tools, and awk delegates
+nothing. The rebuild kept the category and the gate-hardened verifier skeleton and changed the
+engine to rsync, arranging things so that **the performance fix is the delegation**: a per-record
+loop that misses a 12-second window by 29 seconds, whose only fix that fits is one tree-level
+rsync, which is precisely what hands five decisions to rsync's defaults. The spec states
+universals and never names a deciding case; the sample volumes are inert on all five and the
+fixture builder refuses to write a set where that stops being true. Two defects were caught before
+they could cost a cycle — a mutation battery showing two headline axes were inert because the
+fixtures let the right answer survive by accident, and `--agent nop` exposing that orphaned
+grandchildren of a killed run starve a single-core verifier. One `qc_gate` finding was fixed by
+defining an ambiguous term through requirements already stated rather than by explaining the
+failure mode. Accepted at `pass@5` 0/5, avg@5 0.000.
