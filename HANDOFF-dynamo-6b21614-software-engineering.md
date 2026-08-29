@@ -1,9 +1,73 @@
 HANDOFF: dynamo-6b21614-software-engineering (PR #3)
 =====================================================
-Last updated: after pushing commit `4dd3de9` (2026-08-29) -- a fourth,
-structurally new design. Everything below the "UPDATE (2026-08-29)" marker
-is the original handoff as it stood at `d07d273`, kept for full history;
-read the update first.
+Last updated: after pushing commit `45b5b30` (2026-08-30). The fourth
+design (`journal-savepoints`) got a genuine `pass@2` PASS on 2026-08-30
+(commit `58ec4e7`) -- the first time in eleven commits across four designs
+this PR has cleared that gate. `qc_gate` then caught a real verifier
+soundness gap (see "SECOND UPDATE" below); fixed and pushed as `45b5b30`,
+awaiting the pipeline's re-run (pushing re-rolls the whole pipeline
+including `pass@2`, so that PASS needs to reproduce on this commit too --
+not treated as banked). Everything below the first "UPDATE (2026-08-29)"
+marker is the original handoff as it stood at `d07d273`, kept for full
+history; read both updates first, most recent first.
+
+-----------------------------------------------------------------------
+SECOND UPDATE (2026-08-30): pass@2 PASSED, then qc_gate found a real bug,
+fixed, re-pushed.
+-----------------------------------------------------------------------
+Commit `58ec4e7` (journal-savepoints + the docstring fix from rubric
+review) cleared `review`, `validation`, `pass@2` (52m34s), `deep_review`,
+`qc_eval`, `qc_exec`, `ava_review`, `tier1` -- but `qc_gate` failed with
+two linked MUST-FIX items, both really one root cause: `tests/test_outputs.py`
+hardcoded the *exact numeric value* of every savepoint id (`BEGIN sp1 = 1`,
+`BEGIN sp2 = 2`, ...), which `journal.h` never promises -- only "positive,
+never reused" -- so (a) a length-based `id = scopes.len()+1` mutant (which
+silently reuses an id after a release shrinks the stack, violating the
+disclosed never-reused contract) passed all 14 tests, a narrow/hardcodable
+coverage hole; and (b) the suite was simultaneously enforcing an
+*undocumented* requirement (exact id numbering) in the other direction.
+Fixed both at once, pushed as `45b5b30`: the C client's `BEGIN` op no
+longer prints the id it was assigned (`= ok`, not `= <n>`), and a new
+`DISTINCT label1 label2` op/test compares two labels' ids -- without ever
+revealing either -- across a release and a rollback, directly pinning the
+never-reused property. A fifth mutant (the literal one QC found,
+`scopes.len()+1`) was built and confirmed caught only by the new test,
+alongside a clean re-run of the original four-mutant battery. Both
+`harbor run --agent oracle`/`--agent nop` were re-run from a **fresh git
+clone** (see the separate note below on why that matters now) before this
+push, not just the working directory.
+
+Separately, between the first push of this design (`4dd3de9`) and the
+pass@2 PASS, one more real bug surfaced and was fixed: the first push's
+local `oracle=1.0` calibration turned out to be an artifact of my own
+working directory, not the actual committed tree -- see
+[[dynamo_local_calibration_needs_fresh_clone]] (new memory file) for the
+full mechanism (an empty, git-untracked `environment/journal/src/`
+directory existed locally from earlier testing but was never in any
+commit, so a real checkout had no `src/` at all and the remote
+`review / validation` oracle check failed with reward 0.000 despite two
+clean local `harbor run` results). Fixed by committing a `.gitkeep` in that directory and having
+`solution/solve.sh` `mkdir -p` it defensively -- this fix and the
+docstring fix from rubric review both landed by commit `58ec4e7`, which is
+the commit that then went on to pass `pass@2`.
+**Practical upshot for whoever resumes:** from this point on in this task,
+always validate `harbor run --agent oracle`/`--agent nop` from a fresh
+`git clone`, not the working directory, before any push that adds new
+files/directories.
+
+**Next steps:** watch `gh pr checks 3` for `review`, `validation`, and
+especially `pass@2` to reproduce on commit `45b5b30` (pushing re-rolls the
+whole pipeline; the earlier PASS on `58ec4e7` does not carry over
+automatically). If pass@2 passes again, the next real gate is `qc_gate`
+again (should now be clean, but re-check for anything new) and then
+`pass@5` -- the actual target this whole PR has been chasing. If pass@2
+somehow flips to 2/2-solved on this commit despite passing on the last
+one, that would be a genuinely strange result worth a full stop-and-verify
+pass (re-read this whole file) before reacting, since nothing about the
+crux itself changed between the two pushes, only test/verifier-side
+bookkeeping.
+
+-----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
 UPDATE (2026-08-29): FOURTH DESIGN PUSHED, commit `4dd3de9`, awaiting
