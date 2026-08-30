@@ -1,10 +1,96 @@
 HANDOFF: dynamo-6b21614-software-engineering (PR #3)
 =====================================================
-Last updated: after pushing commit `fdd343c` (2026-08-30), which adds a
-genuinely new real-external-convention mechanism. Everything below the
-first "UPDATE (2026-08-29)" marker is the original handoff as it stood at
-`d07d273`, kept for full history; read the updates below first, most
-recent first.
+Last updated: after pushing commit `fdc33ef` (2026-08-30), which adds
+genuine multi-threaded concurrency. Everything below the first "UPDATE
+(2026-08-29)" marker is the original handoff as it stood at `d07d273`,
+kept for full history; read the updates below first, most recent first.
+
+-----------------------------------------------------------------------
+SEVENTH UPDATE (2026-08-30): journal_save/journal_load's Berkeley DB tag
+values were MEMORIZED, not derived -- a real gap in the project's
+obscurity filters. Pivoted to genuine multi-threaded concurrency per the
+user's choice.
+-----------------------------------------------------------------------
+Commit `fdd343c`'s `pass@2` came back 2/2 solved (~13 and ~21 min, all 23
+tests) with an unambiguous root cause, unlike every prior round on this
+PR: *"it recalled P_BTREEMETA=9, P_LBTREE=5, P_OVERFLOW=7 from
+training-data familiarity"* -- not derivation, not a live search, direct
+recall. **This is a genuinely new, generalizable finding worth adding to
+[[dynamo_enumeration_defeats_evidence_inference]]:** the existing
+fetch-resistance filter (no indexed tutorial, no canonical spec page,
+lives in a prose-free internal header) turned out to be necessary but not
+sufficient -- Berkeley DB's `db_page.h` is still a real, long-lived,
+actively-mirrored open-source C header, and large models train on raw
+source-code text from public repositories, not just prose/tutorials. A
+fact can fail every live-search-fetchability test this project has used
+and still be memorized cold if its source file is common enough in that
+raw training corpus. This is DIFFERENT from the "derivability" failure
+mode of rounds 1-4 (logically-forced consequences of a disclosed
+contract) -- it's a distinct, third failure mode: real + external +
+arbitrary + fetch-resistant-by-search + still memorized. Worth a
+dedicated new memory entry, not just a note here, once this task reaches
+an outcome.
+
+Put a three-way decision to the user (accept as documented result and
+stop / try real concurrency despite the risk / try a different real
+convention less likely to be in training-corpus source) -- **chosen: try
+real concurrency**, per the pass2 bot's own suggestion (`journal_get`'s
+same-handle lifetime guarantee under concurrent access forces real
+aliasing/lifetime reasoning, distinct from the prior derivability wall
+since there is no clean, unique, "correct-by-construction" answer a
+sequential trace would reveal).
+
+**What got built:** `journal.h` now states a `journal *` may be shared
+and used concurrently across threads, and `journal_get`'s returned
+pointer stays valid until the next `journal_get` on the same handle from
+the SAME OS THREAD specifically -- a concurrent call from a different
+thread must not invalidate it. This exposed a REAL pre-existing bug in
+every earlier round's reference: the scratch buffer backing
+`journal_get`'s pointer was a single field on the mutex-guarded handle
+state, shared across all threads -- exactly the classic `strerror()`
+defect that `strerror_r()`/thread-local storage exist to fix in real C
+APIs. Fixed by moving it to Rust `thread_local!` storage (the shared base
+scope/scope stack stays behind the same single mutex as always -- only
+the scratch buffer moved out from behind it, since a mutex cannot make a
+pointer a thread already holds remain valid once another thread's call
+frees/overwrites the memory it points to).
+
+**Verification, and why it's deterministic despite genuine concurrency:**
+a new, separate, dedicated C program (`tests/clients/concurrent_client.c`,
+linked with `-lpthread`, NOT the line-scripted `client.c`) spawns two
+real OS threads sharing one handle. Thread A calls `journal_set` then
+`journal_get` on its own key and holds the returned pointer; thread B
+calls `journal_set` then `journal_get` on a *different* key on the *same
+handle*, with a pair of `pthread_barrier`s forcing thread B's call to be
+guaranteed complete before thread A re-checks its pointer. Neither
+thread's assertion depends on finer-grained interleaving than that, so
+the test's pass/fail outcome never depends on scheduling luck even though
+the underlying execution has genuine thread interleaving -- confirmed via
+30 consecutive local runs against the reference (0 failures) and 20/20
+against a shared-scratch-buffer mutant (every single run caught, not
+flaky). All 9 mutants (the prior 8 plus this new one) re-confirmed
+against the current 24-test suite -- the 6 pre-existing mutants needed
+patching first since they predated `journal_save`/`journal_load` and
+failed to *link* against the now-updated `client.c`, not a real
+regression; patched by appending the (unchanged) save/load functions,
+then re-verified each still fails only its own targeted test(s), plus
+(correctly, as a true positive) the new concurrency test, since they all
+still carry the old shared-scratch bug too. oracle=1.0/nop=0.0 confirmed
+from a fresh clone before push.
+
+**Next steps:** watch `gh pr checks 3` for commit `fdc33ef`. If `pass@2`
+produces a genuine valid fail here, this task is finally through the wall
+this whole PR has been stuck at across four-plus rounds on this design --
+proceed to `qc_gate` and `pass@5` as normal. If it still solves 2/2, this
+would be a THIRD distinct failure mode confirmed on one task (after
+derivability and memorization) -- read the trial trace closely (did both
+agents independently reach for `thread_local`/equivalent per-thread
+storage as the obvious textbook fix for a well-known problem class, the
+same way `strerror_r` is well-known?) before deciding whether to keep
+iterating or treat this as the final, well-documented dead end for this
+specific design.
+
+-----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
 SIXTH UPDATE (2026-08-30): journal_save/journal_load pushed -- a real,
