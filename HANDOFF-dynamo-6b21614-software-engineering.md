@@ -1,9 +1,46 @@
 HANDOFF: dynamo-6b21614-software-engineering (PR #3)
 =====================================================
-Last updated: after pushing commit `cb29cda` (2026-08-30). Everything
+Last updated: after pushing commit `d234c41` (2026-08-30). Everything
 below the first "UPDATE (2026-08-29)" marker is the original handoff as
 it stood at `d07d273`, kept for full history; read the updates below
 first, most recent first.
+
+-----------------------------------------------------------------------
+TENTH UPDATE (2026-08-30): rubric review FAILED (a first for this PR --
+every prior failure was pass@2) on difficulty_explanation_quality: it had
+drifted into a results-based changelog across rounds. Fixed and re-pushed.
+-----------------------------------------------------------------------
+`cb29cda`'s `review / review` gate failed cleanly: 30/31 PASS, one FAIL
+on `difficulty_explanation_quality` -- "heavily interleaved with a
+development-changelog narrative that cites how models performed across
+iterations, which the guidance explicitly prohibits." Concrete cited
+evidence: phrases like "after four consecutive rounds...", "the pass@2
+round on that fix again solved cleanly...", "that round again solved
+2/2...". This happened because each escalation round's edit to
+`difficulty_explanation` honestly explained *why this round's addition
+exists* in terms of the *previous round's pass@2 result* -- reasonable
+in isolation each time, but the drift into forbidden "results-based"
+territory only became visible in aggregate after ~6 rounds of edits.
+Rewrote `difficulty_explanation` from scratch as a timeless description
+of the mechanisms/traps/provenance only (zero references to pass@2,
+rounds, or how any trial performed); also stripped the same pattern from
+`verification_explanation` per the reviewer's own non-blocking note.
+`solution_explanation` was already clean (confirmed via grep). New
+standing memory: [[dynamo_task_workflow_feedback]] gained a bullet on
+this exact failure mode -- worth reading before any future task's
+`task.toml` explanation fields get edited incrementally across many
+rounds. Comment/prose-only fix -- no logic, test, or reference change;
+re-confirmed all 26 tests pass, TOML re-validated with `tomllib`,
+oracle=1.0/nop=0.0 from a fresh clone, pushed as `d234c41`.
+
+**Next steps:** watch `gh pr checks 3` for `d234c41` -- rubric review
+should now pass cleanly (nothing else changed), then watch `pass@2` on
+the SAME underlying design as `cb29cda` (nested-validate reentrancy).
+Given the "three mechanism types defeated" signal from two rounds ago
+(see NINTH UPDATE), weigh each further round on its own merits per the
+user's standing "continue until accepted" instruction.
+
+-----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
 NINTH UPDATE (2026-08-30): c794dcb solved 2/2 with a saturation-adjacent
