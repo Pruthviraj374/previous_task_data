@@ -1,9 +1,113 @@
 HANDOFF: dynamo-6b21614-software-engineering (PR #3)
 =====================================================
-Last updated: after pushing commit `d7a2b5a` (2026-08-30). Everything
-below the first "UPDATE (2026-08-29)" marker is the original handoff as
-it stood at `d07d273`, kept for full history; read the updates below
-first, most recent first.
+Last updated: 2026-08-30, no new commit -- PAUSED awaiting a user decision
+(see TWELFTH UPDATE). HEAD is still `d7a2b5a`. Everything below the first
+"UPDATE (2026-08-29)" marker is the original handoff as it stood at
+`d07d273`, kept for full history; read the updates below first, most
+recent first.
+
+-----------------------------------------------------------------------
+TWELFTH UPDATE (2026-08-30): d7a2b5a's pass@2 ALSO solved 2/2 -- a FIFTH
+mechanism type solved, this time on the full 9-contract compound design,
+not a single new axis. Compound scale did not change the outcome.
+Researched four further candidate axes; none clear the bar. PAUSED --
+mid-clarifying-question with the user on how to close this out.
+-----------------------------------------------------------------------
+`d7a2b5a`'s pass@2 (`gh pr checks 3` run 33310736653) came back 2/2
+solved in ~23-24 minutes each, both trials independently converging on
+the exact golden approach -- including the `AtomicBool` tombstone pattern
+for `journal_close` added this round. The trial report's own language:
+"independent convergence on identical non-obvious design decisions...
+suggests these solutions draw on training-data knowledge of the embedded
+database format and Rust FFI patterns rather than pure first-principles
+derivation." This confirms the compound-scale bet's core assumption was
+wrong: stacking more mechanisms does not create combinatorial difficulty
+when every individual mechanism (release-fold, rollback-keep-open,
+validate-watermark, thread_local, BDB tag bytes, atomic-tombstone-close)
+is still independently derivable or a recognized idiom on its own -- a
+capable agent just works the checklist, 22-25 steps, no real struggle.
+
+Checked in with the user (this was the "fifth mechanism type solved"
+check-in flagged as the trigger in the ELEVENTH UPDATE's own next-steps).
+Offered: accept as documented result / one more genuinely different axis
+/ abandon this design for a new domain. User chose "one more genuinely
+different axis" -- something that fails BOTH derivability and
+idiom-recognition, not just "another real fact" or "another concurrency
+pattern."
+
+Researched two real-external-fact candidates via WebSearch before
+proposing anything:
+- **SQLite's WAL checksum** (fibonacci-weighted running sum, two
+  accumulators s0/s1) -- genuinely arbitrary and non-derivable, but
+  SQLite's source is arguably the single most-mirrored piece of C code
+  in existence; if Berkeley DB's (far less famous) page-type enum was
+  already memorized cold, SQLite's internals are a near-certain repeat.
+- **Berkeley DB's own internal checksum function** -- same source family
+  already anchored in `journal.h`'s tag-byte disclosure, which already
+  tells the agent "consult this engine's real definitions" -- a standing
+  hint now pointing straight at BDB's source tree. Worse odds than a
+  fresh fact, not better.
+
+Both rejected on the same finding: any real convention sourced from code
+mirrored on GitHub in volume gets recalled by this model regardless of
+how obscure it feels to a human -- consistent with
+[[dynamo_memorization_beats_fetch_resistance]]. Presented this back to
+the user; they chose to attempt an **empirical-only** crux instead (one
+resolvable only by probing the pinned Docker image's actual runtime
+behavior, not recallable, not written down anywhere) -- explicitly
+acknowledged as higher engineering risk (flaky verifier, UB-adjacent).
+
+Investigated four concrete empirical-only candidates, all rejected for
+different account-for-able reasons -- **useful negative results, worth
+keeping even though nothing shipped**:
+1. **`#[repr(C)]` struct/ABI padding across the boundary** -- standard
+   System V x86-64 ABI, thoroughly documented; not empirical, just
+   another derivable fact a competent C/Rust engineer already knows.
+2. **Allocator/malloc-internals-dependent pointer behavior** -- real, but
+   UB-adjacent and non-guaranteed by the allocator's contract; a verifier
+   built on it would be flaky by construction, violating this program's
+   own `no_brittle_time_dependence`/`graceful_failure` QC criteria.
+3. **Panic-unwind-across-FFI-abort** (the Makefile already pins
+   `panic=abort`) -- real and deterministic, but one of the *most*
+   commonly documented Rust-FFI gotchas (Rustonomicon, every FFI guide);
+   high recognition risk, same failure mode as the real-fact candidates.
+   Worse: the only realistic trigger (an embedded NUL byte in a
+   key/value) can't even reach the library through this task's C-string
+   -based harness -- a C string physically cannot carry an interior NUL,
+   so exercising it would need an artificial injection hook, which is
+   itself a design smell.
+4. **HashMap iteration-order dependence at larger scale** -- checked
+   whether more keys would expose an order-dependent bug analogous to
+   the earlier concurrency-scale gap (2-key test too weak); traced
+   `journal_savepoint_release`'s merge by hand and confirmed insertion
+   order genuinely doesn't affect the final map state. No real bug.
+
+**Conversation paused here** -- was mid-way through a follow-up
+`AskUserQuestion` (accept-and-stop vs. abandon-design-for-new-domain)
+when the user instead asked to update this handoff and get a resume
+prompt. No decision has been made yet on how to close out this PR.
+
+**Next steps:** resume by presenting the same two live options to the
+user (a third, "try anyway" on either of the two real-fact candidates or
+the panic/struct-layout ideas, is available if they'd rather spend the
+push budget on a known-long-odds attempt than stop or pivot):
+1. **Accept as documented result, stop here.** Five independently
+   solved mechanism types plus a compound-scale escalation, backed by
+   fresh research showing why the next two candidate classes both
+   predictably fail too -- a strong, well-evidenced negative result.
+   Write the final case-study file into this playbook folder and stop
+   iterating on PR #3.
+2. **Abandon this design, try a new mechanism domain** within the fixed
+   Software Engineering / Refactoring and Code Modernization category --
+   this would be the task's FIFTH design overall (three earlier ones on
+   this same PR already died to problem-class saturation, see
+   [[dynamo_problem_class_saturation]]; this nested-SAVEPOINT/Rust-FFI
+   design is the fourth, now also looking saturated across every axis
+   tried).
+No code changes are pending; nothing is uncommitted; HEAD is `d7a2b5a`,
+already pushed, pass@2 already resolved (solved, no pass@5 triggered).
+
+-----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
 ELEVENTH UPDATE (2026-08-30): d234c41's pass@2 solved 2/2 -- FOUR
