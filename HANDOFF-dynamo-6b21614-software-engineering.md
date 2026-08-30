@@ -1,9 +1,71 @@
 HANDOFF: dynamo-6b21614-software-engineering (PR #3)
 =====================================================
-Last updated: after pushing commit `1335a3e` (2026-08-30). Everything
-below the first "UPDATE (2026-08-29)" marker is the original handoff as
-it stood at `d07d273`, kept for full history; read the updates below
-first, most recent first.
+Last updated: after commit `1335a3e` (2026-08-30) also came back pass@2
+2/2-solved. Everything below the first "UPDATE (2026-08-29)" marker is
+the original handoff as it stood at `d07d273`, kept for full history;
+read the updates below first, most recent first.
+
+-----------------------------------------------------------------------
+FIFTH UPDATE (2026-08-30): the fourth consecutive 2/2 finally hit the
+real wall -- idiom convergence confirms this is the settled derivability
+pattern, not "shallow coverage." Decision made, research in progress.
+-----------------------------------------------------------------------
+`1335a3e` (the validate snapshot-semantics disclosure) also came back
+pass@2 2/2-solved. The automated pass2-difficulty-suggestion's daily quota
+(2/2) was exhausted, so no fresh advisory posted -- but the ALWAYS-posted
+trial-results comment gave the real signal: both agents independently
+converged on IDENTICAL structure (`Vec<Scope>` stack, `BTreeMap` keys,
+snapshot-then-truncate for validate, same fold direction, same rollback
+semantics), and the reviewer's own words were "these design decisions
+were derived from the normative spec... rather than memorized solution
+patterns" and "the spec was sufficient to derive the correct
+implementation from first principles." This is functionally the same
+wall as the "well-represented in training data" language that killed the
+three earlier designs on this PR -- just named more precisely, and it
+matches this project's settled rule exactly (see
+[[dynamo_enumeration_defeats_evidence_inference]]): obscurity is not the
+filter, DERIVABILITY is. The real diagnosis: the four "compositions"
+added across rounds 2-4 were never four independent axes -- they're all
+downstream of ONE design decision (`Vec<Scope>` + depth-watermark
+truncation) that the fairly-disclosed contract itself all but hands an
+agent, exactly the "strengthening a saturated family" anti-pattern
+[[dynamo_saturated_crux_families]] and [[dynamo_axes_are_decisions_not_rules]]
+warn against. PR #2's real precedent escaped this specific wall via a
+genuine LOCK-HOLD-ACROSS-CALLBACK deadlock risk plus a subtle errno
+restoration order bug where "every sequential trace looks correct" --
+properties my four compositions never had, since every one of mine is a
+correctness rule with no plausible-but-wrong natural implementation that
+survives a normal-order test trace.
+
+Presented this analysis and three options to the user (add one real
+arbitrary convention / pause and research fresh / accept as documented
+result and stop) -- **chosen: add one real arbitrary convention**, reusing
+the built and proven Rust/C-ABI/cdylib infrastructure rather than a full
+redesign. A research fork is in progress applying the FULL 5-filter test
+from [[dynamo_enumeration_defeats_evidence_inference]] (derivability,
+disprovably-wrong-not-just-different, non-mainstream, fetch-resistance
+given `allow_internet=true` is a confirmed hard platform constraint here
+too, verify-against-primary-source) to real embedded/systems
+transaction-log engines with COMPILED reference implementations (RocksDB
+WriteBatchWithIndex SavePoint, LMDB nested transactions, LevelDB, Berkeley
+DB) or an adjacent real C-ABI/systems convention -- explicitly steered
+away from every candidate already killed on this PR (WHATWG MIME-sniffing,
+git-config booleans, dpkg version compare, PE/COFF, CRC catalogs, Unicode
+case-folding, COBOL COMP-3, ZIP bit flags, AppleSingle/AppleDouble) and
+away from anything a build image would ship pre-installed (e.g. glibc's
+errno.h, which fails fetch-resistance outright since it's sitting in the
+agent's own container).
+
+**Next steps:** wait for the research fork's report (verified fact +
+5-filter verdict + build recommendation), then implement it as an
+addition to the existing `journal.h`/`journal.rs` design -- keep the
+Dockerfile/Makefile/C-client-harness/mutant-battery/fresh-clone-calibration
+workflow, which has been reliable across all five rounds so far. If the
+fork finds nothing that clears the bar, that itself is a real result:
+report back to the user that this specific design (however well-built)
+may be structurally capped, and revisit the three-option decision.
+
+-----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
 FOURTH UPDATE (2026-08-30): pass@2 2/2-solved again on `b54c620` (the
