@@ -1,9 +1,72 @@
 HANDOFF: dynamo-6b21614-software-engineering (PR #3)
 =====================================================
-Last updated: after pushing commit `fdc33ef` (2026-08-30), which adds
-genuine multi-threaded concurrency. Everything below the first "UPDATE
-(2026-08-29)" marker is the original handoff as it stood at `d07d273`,
-kept for full history; read the updates below first, most recent first.
+Last updated: after pushing commit `c794dcb` (2026-08-30). Everything
+below the first "UPDATE (2026-08-29)" marker is the original handoff as
+it stood at `d07d273`, kept for full history; read the updates below
+first, most recent first.
+
+-----------------------------------------------------------------------
+EIGHTH UPDATE (2026-08-30): pass@2 on fdc33ef solved cleanly again, but
+the critique targeted the VERIFIER (too weak a concurrency test), not
+the mechanism -- strengthened and re-pushed.
+-----------------------------------------------------------------------
+`fdc33ef`'s pass@2 (~13-21 min, all 24 tests) came back 2/2 solved with a
+notably different kind of critique than any prior round: "the shipped
+concurrency test used only two keys and one journal_get per thread --
+too weak to force a shared scratch buffer or a raw pointer into the
+map's own storage to actually manifest a failure." This is NOT a
+saturation or memorization signal -- it's a concrete, correct verifier
+coverage gap the bot identified, the same "ordinary iteration, harden
+the test" pattern as several earlier rounds, just applied to a test's
+statistical power rather than its logical coverage.
+
+Built `tests/clients/concurrent_stress_client.c`: 6 threads, 2 of which
+("holders") each capture and hold one `journal_get` pointer exactly as
+`concurrent_client.c` does, while 4 separate "volume" threads (holding no
+pointer of their own) each run 300 `journal_set` calls interleaved with
+`journal_get` reads of the holders' keys -- real concurrent traffic at
+volume, still barrier-synchronized for a deterministic pass/fail outcome.
+
+**Caught a real bug in my OWN first draft of this test, not the
+reference**, worth recording as a general lesson: the first version had
+EVERY thread both hold a pointer for later checking AND make further
+`journal_get` calls itself during the volume phase -- this violates
+`journal.h`'s own stated contract ("valid until the next `journal_get`
+call on the same handle from the SAME thread"), so a thread's own later
+`journal_get` legitimately invalidates its own earlier pointer. The
+correct reference then failed this flawed test 20/20 times, which looked
+at first like a reference regression but was actually a test bug -- a
+useful reminder that a new concurrency test failing against an
+already-proven-correct reference is itself a signal to re-read your own
+disclosed contract before assuming the reference is wrong. Fixed by
+strictly separating "holder" and "volume" roles so no thread that holds a
+pointer for later checking ever calls `journal_get` again itself.
+
+Confirmed: 30/30 clean runs against the reference (0 failures), 20/20
+catch rate against the existing shared-scratch-buffer mutant, and the
+full 25-test suite stable across 8 consecutive local runs. Recalibrated
+from a fresh clone, pushed as `c794dcb`.
+
+**Also worth noting for whoever resumes:** mid-session, a background
+gate-status Monitor's notification from a prior push did not carry over
+across what looked like a session/context boundary -- the user had to
+ask "why did we stop?" after the pass@2 result for `fdc33ef` had already
+been sitting complete for a while with nothing acted on. Practical
+takeaway: after any apparent gap in activity on a long-running watched
+PR, proactively `gh pr checks 3` directly rather than assuming the
+monitor will always deliver, especially across compaction/session
+boundaries.
+
+**Next steps:** watch `gh pr checks 3` for commit `c794dcb`. If `pass@2`
+produces a genuine valid fail, proceed to `qc_gate` and `pass@5`. If it
+solves 2/2 again with the SAME kind of "verifier too weak" critique,
+keep hardening the same concurrency mechanism (more threads, more
+volume, more overlapping keys) -- this is still the "ordinary iteration"
+branch, not a wall. If it instead shifts to derivability or memorization
+language, treat that as the real signal per the sixth/seventh updates
+above.
+
+-----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
 SEVENTH UPDATE (2026-08-30): journal_save/journal_load's Berkeley DB tag
