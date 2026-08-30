@@ -65,6 +65,55 @@ fork finds nothing that clears the bar, that itself is a real result:
 report back to the user that this specific design (however well-built)
 may be structurally capped, and revisit the three-option decision.
 
+**Research fork result: nothing found that clears the bar, within the
+savepoint/nested-transaction niche.** Two real candidates checked against
+the full 5-filter test, both rejected with verified evidence:
+- **LMDB/RocksDB nested-transaction rules** (child-abort-doesn't-affect-
+  parent, parent-abort-cascades, rollback-with-no-savepoint returns
+  NotFound) -- verified against LMDB's official manual and RocksDB's real
+  `write_batch_with_index.h` source. REJECTED: logically forced, the same
+  standard nested-transaction semantics any competent engineer derives
+  from "nesting" itself -- exactly the wall already hit four times.
+- **SQLite's WAL-mode frame checksum** (a real, bespoke, non-CRC
+  "Fibonacci weighted" algorithm plus a real arbitrary magic-number/
+  byte-order quirk) -- verified against `sqlite.org/walformat.html` and
+  `wal.c`. Passes derivability/disprovably-wrong/non-mainstream, but
+  REJECTED on fetch-resistance: it lives on SQLite's own canonical,
+  top-ranked reference page, stated verbatim -- with `allow_internet=true`
+  a confirmed hard platform constraint on this task, one search retrieves
+  the complete answer with zero transcription risk. A worse version of
+  the JWST DQ-flags failure (a live official spec page beats even a tidy
+  GitHub data file).
+- Berkeley DB's status-code numbering was a dead end for a different
+  reason: even if verified, grafting BDB's specific numbering onto a
+  bespoke `journal.h` that already uses plain `0`/`-1` has no organic
+  justification -- risks an `interesting_realistic`/contrived-convention
+  rejection on its own terms, independent of the 5-filter test.
+
+The fork's own assessment, worth recording as a candidate new finding:
+**"nested transaction/savepoint semantics" may be a structurally hostile
+niche for this defeat pattern**, the same way Chemistry/Materials and
+Computational Geometry are recorded as hostile in
+[[dynamo_enumeration_defeats_evidence_inference]] -- every real embedded
+engine's savepoint nesting rules converge on the same SQL-standard-derived
+shape (no room for a committee-arbitrary axis), and the one genuinely
+arbitrary fact adjacent to it (SQLite's WAL checksum) happens to live on
+the single most heavily-indexed page for exactly that fact. This is
+NOT yet confirmed as a durable finding (n=1 fork's search, not
+exhaustive) but is worth flagging in memory as a lead for future
+Software-Engineering/systems tasks.
+
+**Decision point reached again, sooner than hoped.** Two live options the
+fork itself named: (a) abandon the savepoint-semantics constraint and bolt
+an unrelated real-arbitrary-fact mechanism onto the existing Rust/C-ABI
+infrastructure (e.g. a binary persistence format using a real, obscure,
+compiled-library-only encoding) -- reuses the proven Dockerfile/Makefile/
+harness but risks reading as contrived/bolted-on; (b) treat this as
+confirmation the mechanism space is exhausted for this specific design and
+put the three-way decision (try something unrelated / pause and research
+more broadly / accept as a documented result and stop) back to the user.
+Put to the user; awaiting their read.
+
 -----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
