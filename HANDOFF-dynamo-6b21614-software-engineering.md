@@ -1,9 +1,72 @@
 HANDOFF: dynamo-6b21614-software-engineering (PR #3)
 =====================================================
-Last updated: after pushing commit `d234c41` (2026-08-30). Everything
+Last updated: after pushing commit `d7a2b5a` (2026-08-30). Everything
 below the first "UPDATE (2026-08-29)" marker is the original handoff as
 it stood at `d07d273`, kept for full history; read the updates below
 first, most recent first.
+
+-----------------------------------------------------------------------
+ELEVENTH UPDATE (2026-08-30): d234c41's pass@2 solved 2/2 -- FOUR
+consecutive mechanism types now defeated with no axis surviving more than
+one round. User chose compound scale over another single new axis: added
+a ninth mechanism (journal_close reentrant/idempotent tombstone) on top
+of everything already built, betting on sheer count approaching this
+repo's own closed PR #2 scale (8+ contracts) rather than searching for a
+tenth "different enough" single crux.
+-----------------------------------------------------------------------
+Checked in with the user after `d234c41`'s pass@2 came back 2/2 solved
+(the fourth distinct mechanism type -- nested scopes, snapshot-at-entry,
+Berkeley DB tag bytes, thread-safety -- to be cleanly solved in turn,
+none surviving a second round). Before proposing another single-axis
+escalation, hand-traced whether a 3-level nested-validate test would add
+real coverage over the existing 2-level one -- concluded no (per
+[[dynamo_axes_are_decisions_not_rules]] / [[dynamo_saturated_crux_families]]:
+once a trial applies a crux correctly rather than shortcuts it, deeper
+application of the same idiom adds nothing new) -- so did not build it.
+Asked the user how to proceed; chose "Try compound scale (higher risk/
+effort)": a much larger compound task closer to this repo's own closed
+PR #2 scale (8+ simultaneous contracts), betting that sheer volume of
+independently-fallible mechanisms succeeds where individual axes haven't.
+
+Implemented `journal_close` as a ninth genuinely independent mechanism:
+idempotent (repeat calls are a no-op) and safe to call reentrantly from
+*inside* a `journal_validate` callback running on the handle being
+closed; every other function then takes its documented closed-handle
+failure path. Reference uses an atomic flag (never actually frees the
+handle -- deliberate small leak, not worth reference-counting for a
+handle whose process is about to exit) checked at every function's entry.
+The demanding case is `journal_validate` itself: an entry-only check
+misses a callback that closes the handle partway through iteration and
+then returns *accepting* its key -- the loop's own accept/reject
+bookkeeping never registers that close on its own. Fixed by re-checking
+the flag after the callback loop finishes, before either the accept-path
+return or the rejection-cleanup branch touches the scope stack again,
+overriding whatever accept/reject outcome the loop itself produced.
+Added a `CLOSE` op to the C test client (client.c) and three new tests:
+idempotent double-close, every function's closed-handle failure path,
+and the sharpest one -- a validate callback that accepts every key but
+closes reentrantly, which must still make the OUTER call report failure.
+Built an eleventh mutant (entry-check-only, missing the post-callback
+re-check) and confirmed it fails exactly and only the new reentrant-close
+test, all 28 others passing -- isolates the intended bug precisely.
+All 29 tests pass locally against the reference; TOML re-validated with
+`tomllib`; grepped for `solution/`/`tests/` leakage (clean); recalibrated
+from a fresh `git clone` (oracle=1.0, nop=0.0); no run in flight on
+`gh pr checks 3` before pushing. Pushed as `d7a2b5a`. `task.toml`'s three
+explanation fields and `README.md` both updated in the same commit.
+
+**Next steps:** watch `gh pr checks 3` for `d7a2b5a`. If pass@2 solves
+this too, that would be a FIFTH mechanism type solved (now on top of a
+9-contract compound design, not a single new axis) -- a materially
+different data point than any prior round, worth another check-in with
+the user rather than autonomously reaching for a tenth mechanism, since
+compound scale was itself already the escalation the user chose after
+"accept as documented result" was offered and declined once. If pass@2
+fails to solve (partial credit, or a critique naming a specific gap),
+diagnose and fix per the established pattern and keep going per the
+"continue until accepted" standing instruction.
+
+-----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
 TENTH UPDATE (2026-08-30): rubric review FAILED (a first for this PR --
