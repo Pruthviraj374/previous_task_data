@@ -1,9 +1,82 @@
 HANDOFF: dynamo-6b21614-software-engineering (PR #3)
 =====================================================
-Last updated: after pushing commit `c794dcb` (2026-08-30). Everything
+Last updated: after pushing commit `cb29cda` (2026-08-30). Everything
 below the first "UPDATE (2026-08-29)" marker is the original handoff as
 it stood at `d07d273`, kept for full history; read the updates below
 first, most recent first.
+
+-----------------------------------------------------------------------
+NINTH UPDATE (2026-08-30): c794dcb solved 2/2 with a saturation-adjacent
+verdict across THREE mechanism types now -- added the one previously
+flagged, never-built axis (nested validate-within-validate). Also: a
+real TOML syntax bug caught before push, worth a standing process fix.
+-----------------------------------------------------------------------
+`c794dcb`'s pass@2 (~13-19 min, all 25 tests) solved 2/2 with a
+qualitatively different verdict than the concurrency-verifier-gap
+critique from the round before: both trials independently applied the
+real Berkeley DB tag bytes from stated prior knowledge AND independently
+reached correct (if differently shaped -- one `thread_local!`, the other
+a `Mutex<HashMap<ThreadId, Box<CString>>>`) per-thread pointer isolation.
+The trial report's own language: the task is "a genuine difficulty
+filter for agents with strong prior knowledge." This is now THREE
+independently-defeated mechanism types on this one design (derivability
+of custom scope-stack logic; memorization of an obscure real fact;
+derivability/pattern-recognition of a well-known thread-safety idiom) --
+a materially stronger signal than any single round, approaching (not yet
+using the exact words of) the "well-represented in training data"
+saturation register that killed the three earlier designs on this PR.
+
+Per the user's explicit standing instruction ("continue doing this till
+the task gets accepted"), did not stop to re-litigate the decision --
+implemented the one concrete, previously-flagged-but-never-built lead
+still on the table: `journal_validate`'s own "may call back into any
+journal_* function" clause was never tested with journal_validate calling
+ITSELF (a callback opening a savepoint, writing to it, then recursively
+validating that now-current scope) -- only single-level reentrancy
+(set/begin/release/rollback from the callback) had been exercised. A
+plausible implementation bug this catches: storing the entry-time
+watermark as mutable state on the JournalHandle instead of a value local
+to each `journal_validate` call -- a nested call then clobbers the outer
+call's own watermark, so the outer call's later rejection-cleanup
+silently fails to discard what it opened. Had to fix a real limitation in
+the TEST HARNESS first: the line-scripted client's VALIDATE handling used
+global variables that a genuinely nested (reentrant) VALIDATE call would
+have corrupted -- now saved/restored around each VALIDATE invocation.
+Confirmed the new test passes against the reference and is caught, only
+by itself, by a purpose-built shared-watermark mutant (10th mutant total).
+
+**A real process bug, worth keeping as a standing lesson:** the
+`task.toml` edit for this round quoted the platform's own review language
+verbatim (`describing the task as "a genuine difficulty filter..."`)
+INSIDE an already-double-quoted TOML string field, with the inner quotes
+left unescaped -- invalid TOML. This was NOT caught by the standard
+`docker build` + pytest suite (which never reads `task.toml`'s prose
+fields), only surfacing as a confusing, generic `harbor run` failure
+(`ValueError: Either datasets or tasks must be provided`, from deep
+inside harbor's task-discovery code, giving no hint it's a TOML parse
+error). Found via `git worktree` bisection across recent commits, then
+confirmed precisely via `cat task.toml | docker run ... python3 -c
+"import tomllib; tomllib.loads(...)"`, which gave the exact line/column
+in one shot. Fixed (removed the literal inner quotes) and amended into
+the same still-unpushed commit (safe: it had never been pushed, so
+amending was appropriate, unlike the standing no-amend rule for already-
+public commits). **New standing memory:** [[dynamo_validate_toml_syntax_before_push]]
+-- validate `task.toml` with a real TOML parser as an explicit, fast
+pre-push step from now on, especially after any edit that quotes review
+language verbatim into a prose field.
+
+**Next steps:** watch `gh pr checks 3` for commit `cb29cda`. Given the
+strength of the "three mechanism types defeated" signal, if `pass@2`
+solves 2/2 again on this round too, seriously weigh whether this design
+has reached a genuine, well-documented ceiling for this specific model
+(Opus-4.8/Terminus-2) rather than continuing to bolt on more axes --
+the user's standing instruction is to keep iterating until acceptance,
+but each further round should be weighed on its own merits (is there a
+concrete, specific, previously-unexplored lead, or is this now pure
+trial-and-error against a wall). If a genuine valid fail lands, proceed
+to `qc_gate` and `pass@5`.
+
+-----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
 EIGHTH UPDATE (2026-08-30): pass@2 on fdc33ef solved cleanly again, but
