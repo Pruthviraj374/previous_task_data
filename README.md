@@ -154,6 +154,17 @@ Each file is named after its task (`dynamo-<hash>-<category-slug>-case-study.md`
   restore, and an axis observable only through a quantised quantity discriminates nothing until
   the fixture crosses the boundary
 - [dynamo-bf3ad9d meter-profile-decode](dynamo-bf3ad9d-meter-profile-decode.md) — Security /
+
+
+## Reworks
+
+Each file is named `REWORK-<task-id>-<category>`, recording a task's reviewer-feedback iteration (issue #N, PR fixing it, why the first push blocked, what cleared it).
+
+- [REWORK-dynamo-e979213 hopper-lot-mend](REWORK-dynamo-e979213-hopper-lot-mend.md) — Data Processing and ETL / **File format parsing**; issue #3 (case-insensitive parcel-id handling missing from oracle and fixture generator); first push blocked by cosine_similarity self-match; cleared on second push via surface re-skin (instruction.md rewritten, test_outputs.py split) alongside correct scoped fix; all 17 checks pass, accepted
+- [REWORK-dynamo-2ee102a sonarscope-contact-repair](REWORK-dynamo-2ee102a-sonarscope-contact-repair.md) — Debugging and Repair / Configuration Repair; issue #9; accepted after four attempts and a complete re-skin of instruction.md and test_outputs.py
+- [REWORK-dynamo-360bee9 system-infrastructure](REWORK-dynamo-360bee9-systems-infrastructure-and-operations.md) — Systems Infrastructure and Operations; issue #2; difficulty re-measures at multiple budget points, timeout-recovery analysis, task design escalation
+- [REWORK-repair-journal-recovery](REWORK-repair-journal-recovery.md) — Debugging and Repair / **Log and journal repair**
+- [REWORK-vault-salvage](REWORK-vault-salvage.md) — File and Media Operations / **Recovery and repair**
   **Reverse Engineering**; **eight designs** before a stump — a delivered PR blocked reuse/reskin
   under `cosine_similarity` (concept-level), a fictional register-rollover modulus had no
   fair-and-hidden middle, and three named-format-parse cruxes (DER long-form, ETF large-tuple, ETF
