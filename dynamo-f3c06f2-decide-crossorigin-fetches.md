@@ -2,19 +2,25 @@
 
 | | |
 |---|---|
-| **Outcome** | **Accepted** — every gate green, `accepted` label |
-| **Headline** | **pass@5 = 0/5, avg@5 = 0.000**, 5 of 5 good valid failures, 0 timeouts, 0 verifier issues |
+| **Outcome** | **Accepted twice** — every gate green, `accepted` label, on two separate PRs |
+| **Headline** | **pass@5 = 0/5, avg@5 = 0.000**, 5 of 5 good valid failures, 0 timeouts, 0 verifier issues — the same result on both |
 | Repo | `handshake-project-dynamo/dynamo-f3c06f2-software-engineering` |
-| PR | https://github.com/handshake-project-dynamo/dynamo-f3c06f2-software-engineering/pull/2 |
+| PR | https://github.com/handshake-project-dynamo/dynamo-f3c06f2-software-engineering/pull/2 (accepted, closed with the fork) · https://github.com/handshake-project-dynamo/dynamo-f3c06f2-software-engineering/pull/3 (accepted, final) |
 | Category / sub-category | Software Engineering / Web API and networking software (pre-seeded) — **first task in this sub-category** |
 | Benchmarked model | Opus-4.8 via Terminus-2 (reported as `Model A`) |
-| Final commit | `4fb8372` (second and last push) |
-| Pushes to acceptance | **2** — first push cleared everything except `qc_gate`; second cleared `qc_gate` and ran pass@5 |
+| Final commit | `fe45f21` (PR #3, fourth push overall) |
+| Pushes to acceptance | **4 across two PRs** — 2 on PR #2, then 2 more on PR #3 after the fork was deleted and recreated |
 
-Two pushes, one gate failure, no redesign. The design was lifted almost wholesale from
-`dynamo-300f2a9-request-preconditions.md` §4 and §10 — a different standard, a different
-artifact, the same machinery and the same shape of crux. Read §4 here for what transferred
-and §3 for the candidate domains that were killed on paper first.
+**Read §5b before the checklist.** The task was accepted at 0/5 on PR #2, then the fork was
+deleted and had to be recreated. Resubmitting the *identical accepted commit* as PR #3 did not
+reproduce the accepted result: `qc_gate` blocked it twice, on two findings the first PR never
+raised. QC is stochastic — an accepted commit is not a commit that will be accepted again — and
+both findings were real defects, not noise. §5b is the most valuable part of this document.
+
+The design was lifted almost wholesale from `dynamo-300f2a9-request-preconditions.md` §4 and §10
+— a different standard, a different artifact, the same machinery and the same shape of crux.
+Read §4 here for what transferred and §3 for the candidate domains that were killed on paper
+first.
 
 ---
 
@@ -33,7 +39,7 @@ whether the browser preflighted it, whether the response reached script
 
 What the agent can see:
 
-- `/app/data/traces.json` — 40 recorded fetches: page origin, the request (URL, method,
+- `/app/data/traces.json` — 41 recorded fetches: page origin, the request (URL, method,
   headers, credentials mode), the endpoint's `OPTIONS` response, and the response to the
   request itself as it came off the wire.
 - `/app/data/recorded.json` — the verdicts the browser fleet recorded for that capture.
@@ -41,8 +47,8 @@ What the agent can see:
   and **one flat sentence** naming the WHATWG Fetch Standard. It enumerates none of its rules.
 - `/app/check.py` — replays the shipped capture and diffs it.
 
-Graded on the shipped 40 plus **71 held-out records** across nine captures not in the image.
-Every graded value is categorical.
+Graded on the shipped **41** plus **84 held-out records** across nine captures not in the image.
+Every graded value is categorical. (The counts grew from 40/71 during the PR #3 cycle; see §5b.)
 
 ---
 
@@ -209,6 +215,89 @@ are identical to those in the other trials… No corrective action is indicated.
 
 ---
 
+## 5b. The second acceptance — what resubmitting an accepted commit cost
+
+The fork was deleted after PR #2 was accepted. Recreating it and opening PR #3 on **the same
+commit `4fb8372`** should, on the naive model of the pipeline, have reproduced the same green
+board. It did not. `qc_gate` blocked twice, on two findings PR #2 never raised, and **both were
+real defects in a commit that had already been accepted at 0/5.**
+
+### Block 1 — C3 again, on a site my own sweep could not see (`4fb8372`)
+
+> *Mutation M9: replaced the Accept-Language/Content-Language safelist charset test
+> `all(b in _LANGUAGE_BYTES ...)` with `not any(b in _UNSAFE_BYTES ...)` (broadens the safelist
+> beyond the spec's 0-9/A-Za-z/space\*,-.;= set). Full verifier still gives reward=1 (12 passed).*
+
+My sweep from §5 mutated *within* one expression — drop a `.lower()`, shift an int, flip a
+comparison, drop a set member, delete a guard. M9 is a different shape: **one branch answered
+with a sibling branch's answer.** That is the natural form of "applied the right rule to the
+wrong header", it is exactly what the pass@5 agents do, and I had no operator for it.
+
+The fix was the operator, not the fixture. For every function, replace each `return <expr>` with
+every *other* return expression in the same function. Sites went **105 → 187**, and it
+reproduced M9 plus four more previously invisible sites. Of those, one was a real hole
+(`_LANGUAGE_BYTES` vs `_UNSAFE_BYTES`, closed with two `en_GB` / `en_US` fixtures — underscore is
+outside the language set but not in the Accept exclusion set, so it separates the two
+predicates); the rest were equivalences now recorded with reasons.
+
+### Block 2 — A6, an oracle bug in the accepted reference (`ce46240`)
+
+> *Input: cross-origin GET .../v2/regions with ONLY header Range: bytes=0-100 … Per WHATWG Fetch
+> Standard, `range` with a simple-range value is [safelisted]*
+
+**QC was right and the accepted reference was wrong.** `Range` is on the Fetch Standard's
+request-header safelist; my `is_safelisted_request_header` fell through to `return False` for it,
+so a fetch carrying only `Range` was given a preflight it would never really have had.
+
+I had dropped that branch two cycles earlier as "unreachable". **Unreachable in my fixtures is not
+unreachable in the format** — `TRACE.md` admits any header name, so every name the standard names
+is reachable. That is the whole lesson of this block, and it is a different failure mode from C3:
+C3 says a decision is ungraded, A6 says a decision is *wrong*.
+
+The fix implemented the real rule — safelisted only for a single range with a start: `bytes=`,
+no whitespace anywhere, one range only, bounds not running backwards, and a start present, so
+`bytes=-4096` stays undeclarable. Ten held-out records sit either side of every refusal the parse
+makes (suffix, whitespace, two ranges, backwards bounds, wrong unit, uppercase `BYTES=`, no dash,
+`bytes=0-` to catch `if not parsed[0]`, and the 128/129-byte bound).
+
+**This made the task harder, not easier.** It is a ninth exception, and `range-never-safelisted`
+as a calibration reading is silent on the shipped capture and caught by four held-out records.
+The shipped capture gained one `Range` fetch, deliberately a **suffix** range — the one shape the
+exception does *not* cover — so both readings agree on it and it reads as confirmation that
+`Range` is ordinary. Equivalence, not omission, applied to a rule discovered late.
+
+### What PR #3 cost, and the two numbers that matter
+
+| | PR #2 | PR #3 |
+|---|---|---|
+| Pushes | 2 | 2 |
+| `qc_gate` blocks | 1 (C3, origin case fold) | 2 (C3 sibling-branch; A6 `Range`) |
+| Shipped / held-out records | 40 / 71 | 41 / 84 |
+| Exceptions in the crux | 8 | 9 |
+| Mutation sites / survivors | 105 / 3 | 224 / 14 |
+| `trials` | 0/5, avg 0.000 | 0/5, avg 0.000 |
+
+`trials` on PR #3: **5 of 5 good valid failures, 0 soft-timeout, 0 task/verifier issue,
+avg@5 = 0.000**, agents finishing in 9–31 minutes of a 3600-second budget. All **35** rubric
+checks (7 criteria × 5 trials) unanimous PASS, `approach_validity` included: *"legitimate agent
+knowledge gaps, not task/verifier defects."* The grader's divergence table lists eight distinct
+misses; the four universal ones are unchanged from PR #2, and the new `Range` clause appears
+inside the value-safelisting row rather than as a separate failure — it deepened an axis rather
+than adding one.
+
+### The rule this establishes
+
+**An accepted commit is not a commit that will be accepted again.** QC samples mutations and
+probes; two runs of the same commit draw different samples. Two consequences worth carrying:
+
+1. If you ever have to resubmit, budget for a *fresh* QC cycle, not a formality.
+2. More usefully — a clean `qc_gate` is evidence, not proof. Both findings here were genuine, and
+   the second was a live correctness bug in a reference that had already shipped at 0/5. The
+   sweep in §9 is the thing that catches C3; the new §9 item on auditing the reference against
+   the authority for every input the *format* admits is the thing that catches A6.
+
+---
+
 ## 6. Error → what to do, and what NOT to do
 
 | Symptom | Do | Do **not** |
@@ -219,7 +308,14 @@ are identical to those in the other trials… No corrective action is indicated.
 | Constants written as arithmetic over code points | Write them as byte/character **literals** and add a build-time check that membership is unchanged | Do **not** leave `range(0x30, 0x3A)`-style constants in a graded reference. Each integer is a mutation site with no meaningful fixture; rewriting removed ~40 noise survivors here in one edit |
 | A rubric criterion passed with an **advisory note** | Fold it into the same push as the real blocker. Both `deep_review` advisories (stage the capture under an opaque name; comment the byte-string intent) and the `instruction_concision` note went in with the C3 fix | Do **not** push a note-only fix on its own. It re-rolls all 31 rubric criteria and burns a rate-limited slot — `contact-export` §3.4 lost a cycle to exactly that |
 | `pass2` **0/2** with several axes already firing | Hold the design and spend the cycle on the gate fix | Do **not** add another axis (`lumenp` §3), and do **not** restore concealment |
-| Task **accepted at pass@5 0/5** and you hold a polish idea | Hold it. 0/5 is the ceiling | Do **not** push. Fifth confirmation after `nfs4-access-audit` §5.3, `merge-lora` §7, `reassemble-tap-sessions` §6, `request-preconditions` §6 |
+| Task **accepted at pass@5 0/5** and you hold a polish idea | Hold it. 0/5 is the ceiling | Do **not** push. Sixth confirmation after `nfs4-access-audit` §5.3, `merge-lora` §7, `reassemble-tap-sessions` §6, `request-preconditions` §6 |
+| You must **resubmit an already-accepted commit** (fork deleted, PR reopened) | Budget a full QC cycle. QC samples its mutations, so the same commit draws different probes; here it drew two blocking findings PR #2 never raised, and **both were real** — one ungraded decision and one live oracle bug (§5b) | Do **not** treat the prior acceptance as a formality, and do **not** dismiss a new finding as noise because the commit passed before. A clean `qc_gate` is evidence, not proof |
+| A check is still in flight and you have a fix ready for a *different* problem | Hold it until the board settles. A push mid-run re-rolls everything and can discard a result that was about to pass | Do **not** push "while we're waiting". I held an IPv6 origin-serialization patch through three polls for exactly this reason; it was never needed |
+| `qc_gate` **C3** naming a mutant your own sweep did **not** find | Ask what *shape* of mutation you are missing, then add the operator. Mine only mutated within one expression; the missing shape was **one branch answered with a sibling branch's answer** — the natural form of "right rule, wrong header", and exactly what the pass@5 agents do. Adding it took the sweep 105 → 187 sites | Do **not** conclude your sweep is complete because it found nothing. A sweep is only as good as its operator set, and a clean run proves nothing about a shape you never generate |
+| `qc_gate` **A6 "Oracle Edge-Case or Logic Bug"** | **Believe it and fix the reference.** This is not C3 with different wording: C3 says a decision is ungraded, A6 says a decision is *wrong*. Implement the rule properly, then add fixtures either side of every refusal the new logic makes | Do **not** narrow the format to make the case go away. Fixing the reference makes the task harder — a ninth exception that agents miss is worth more than an axis you deleted |
+| You are about to drop a spec branch as "unreachable" | Check reachability against **the format's guarantees**, not against your fixture list. `TRACE.md` admits any header name, so every name the standard names is reachable, and `Range` was a live bug for two cycles | Do **not** confuse "no capture exercises it" with "no capture can". The first is a coverage gap you close with a fixture; the second is the only licence to delete a branch |
+| A late-discovered rule you must now add to the shipped capture | Ship the record in the shape the exception does **not** cover, so both readings agree on it. The `Range` record shipped is a *suffix* range — undeclarable under either reading, so it confirms that `Range` is ordinary | Do **not** ship a record the new rule decides. That hands the agent the exception in the sample and kills the axis you just built |
+| Survivor explanations in your sweep keyed to a line number | Key them to the mutation's **shape** — the guard's test expression, the substituted expression — so they survive an edit to the reference | Do **not** write `delete guard at decide.py:121`. Every one of mine went stale the moment the reference grew a function, and a stale key silently re-raises an explained survivor as uncovered |
 | Candidate crux is a real published rule | Check the **normative verb**, then the **local-oracle test** — can `apt-get`/`pip` answer *this* question, not merely something adjacent? | Do **not** assume a library's existence disqualifies the domain, and do **not** assume its absence qualifies it. `mosquitto` is an apt-get away and killed MQTT; `flask-cors` exists and did not kill CORS, because it answers the server's question, not the browser's |
 | A candidate rule that is real, published and latent | **Check it can fire at all** before designing around it. The 1024-byte volume rule is real, normative and perfectly latent — and unreachable given unique field names | Do **not** build the fixtures first and discover the arithmetic later |
 
@@ -239,7 +335,14 @@ are identical to those in the other trials… No corrective action is indicated.
    is invisible to every gate *and* to pass@5.
 3. **Nearly shipped the 1024-byte volume rule** as a live axis before doing the arithmetic
    (§3g). The fixture group was already sketched.
-4. **Ran `harbor run` from the wrong working directory** and wrote a tool to a path that did not
+4. **Shipped a reference that was wrong about `Range` for two cycles** — after deleting the
+   branch as "unreachable" on the strength of my *fixtures* rather than the *format*. `TRACE.md`
+   admits any header name; every name the standard safelists was always reachable. Found by
+   `qc_gate` A6 on a commit that had already been accepted at 0/5 (§5b).
+5. **Keyed the sweep's survivor explanations to line numbers**, so every one went stale the
+   moment the reference grew a function — silently re-raising explained survivors as uncovered.
+   Keyed to the mutation's shape now.
+6. **Ran `harbor run` from the wrong working directory** and wrote a tool to a path that did not
    exist, silently. The heredoc failed, the follow-up `python3` failed loudly, no harm — but
    scripted file writes need an absolute path when the shell's cwd is not pinned.
 
@@ -291,6 +394,16 @@ Before the first push:
 - [ ] **Write the mechanical coverage sweep too, and run it before the first push, not after
       `qc_gate` says so.** This is the one thing that would have made this task a one-push
       acceptance.
+- [ ] **Include a cross-branch operator in the sweep**: replace each `return <expr>` with every
+      other return expression in the same function. This is the "right rule, wrong header" shape,
+      it is what the agents actually do, and a within-expression sweep cannot see it.
+- [ ] **Audit the reference against the authority for every input the *format* admits** — not
+      every input a fixture exercises. Walk the standard's own list (every safelisted name, every
+      normalized method, every forbidden name) and check the reference answers each correctly.
+      This is the A6 check, and it is separate from the coverage sweep.
+- [ ] Before deleting any branch as unreachable, prove it from the format's guarantees in
+      writing. "No capture exercises it" is a coverage gap, not a licence to delete.
+- [ ] Key every survivor explanation to the mutation's shape, never to a line number.
 - [ ] Hand-plant held-out expectations from the source, then require the reference to agree.
 - [ ] Count `^def test_` against the held-out fixture directory.
 - [ ] Audit every graded record against every guarantee the agent-visible contract makes, and
@@ -319,8 +432,13 @@ cost the one gate cycle here — **mutate your own reference mechanically before
 case fold, bound, comparison, constant member and guard, replayed through every capture, failing
 on any survivor you cannot explain. `qc_gate` runs that sweep whether or not you do, and it found
 one survivor where my own hand-written mutants found none; when I finally wrote the sweep it found
-twenty-two, five of which turned out to be redundant branches that should never have shipped. All
-five pass@5 agents wrote a correct-looking 224–265-line implementation, saw 40/40 on the shipped
-capture, and quit with three quarters of their budget unspent. The grader's summary is the whole
+twenty-two, five of which turned out to be redundant branches that should never have shipped.
+Two things I learned only on the resubmission (§5b): a sweep that mutates *within* expressions
+cannot see the "right rule, wrong header" shape — you need an operator that answers one branch
+with a sibling branch's answer — and a branch you delete as unreachable must be proved
+unreachable **from the format's guarantees**, not from your fixture list, or you ship an oracle
+bug (`Range` was safelisted all along). All five pass@5 agents wrote a correct-looking
+224–265-line implementation, saw 41/41 on the shipped capture, and quit with three quarters of
+their budget unspent. The grader's summary is the whole
 design in one line: *"agents are drawing on training-data knowledge of CORS rather than carefully
 reading the full WHATWG Fetch Standard from first principles."*
